@@ -2506,6 +2506,11 @@ nanomatch@^1.2.9:
     snapdragon "^0.8.1"
     to-regex "^3.0.1"
 
+native-messaging@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/native-messaging/-/native-messaging-1.0.0.tgz#c9ad62f9f7cd818c711d334139cb5198fce15ee5"
+  integrity sha512-9L4ntTIbNdEbBIrWxc0yxrxWwncL3O+tqcVZcIZf86S8m8SjB5wTyFCpKha2NSmuYbfhCYoP1liPJwzey4Bucg==
+
 native-or-lie@1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/native-or-lie/-/native-or-lie-1.0.2.tgz#c870ee0ba0bf0ff11350595d216cfea68a6d8086"

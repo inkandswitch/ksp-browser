@@ -9,7 +9,8 @@
     "build": "webpack"
   },
   "dependencies": {
-    "freeze-dry": "^0.2.4"
+    "freeze-dry": "^0.2.4",
+    "native-messaging": "^1.0.0"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.89",

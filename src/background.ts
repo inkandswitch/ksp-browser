@@ -1,5 +1,3 @@
-/* eslint-env webextensions */
-
 import sendMessage from './extension-messaging'
 
 chrome.contextMenus.onClicked.addListener((itemData) => {

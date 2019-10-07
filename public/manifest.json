@@ -2,7 +2,7 @@
   "name": "Pushpin Clipper",
   "description": "Send the contents of the active tab to Pushpin.",
   "version": "0.1",
-  "permissions": ["background", "activeTab", "contextMenus", "*://*/*"],
+  "permissions": ["background", "nativeMessaging", "activeTab", "contextMenus", "*://*/*"],
   "background": {
     "scripts": ["background.js"],
     "persistent": false
