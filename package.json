@@ -1,0 +1,27 @@
+{
+  "name": "eleanor",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/pvh/eleanor",
+  "author": "Peter van Hardenberg <pvh@pvh.ca>",
+  "license": "MIT",
+  "scripts": {
+    "build": "webpack"
+  },
+  "dependencies": {
+    "freeze-dry": "^0.2.4"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.89",
+    "@types/copy-webpack-plugin": "^5.0.0",
+    "@types/node": "^12.7.11",
+    "copy-webpack-plugin": "^5.0.4",
+    "eslint": "^6.5.1",
+    "eslint-config-airbnb-typescript": "^5.0.0",
+    "ts-loader": "^6.2.0",
+    "ts-node": "^8.4.1",
+    "typescript": "^3.6.3",
+    "webpack": "^4.41.0",
+    "webpack-cli": "^3.3.9"
+  }
+}
