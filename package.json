@@ -11,16 +11,17 @@
   "dependencies": {
     "freeze-dry": "^0.2.4",
     "native-messaging": "^1.0.0",
-    "node-ipc": "^9.1.1",
-    "webpack-encoding-plugin": "^0.3.1"
+    "node-ipc": "^9.1.1"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.89",
     "@types/copy-webpack-plugin": "^5.0.0",
     "@types/node": "^12.7.11",
+    "@typescript-eslint/parser": "^2.3.3",
     "copy-webpack-plugin": "^5.0.4",
     "eslint": "^6.5.1",
     "eslint-config-airbnb-typescript": "^5.0.0",
+    "terser-webpack-plugin": "^2.1.2",
     "ts-loader": "^6.2.0",
     "ts-node": "^8.4.1",
     "typescript": "^3.6.3",

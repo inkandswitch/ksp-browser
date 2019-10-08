@@ -61,3 +61,9 @@ function triggerActionFeedback() {
     chrome.browserAction.setBadgeBackgroundColor({ color: 'green' })
   }, 1000)
 }
+
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+  console.log(sender.tab ? 'from a content script:' + sender.tab.url : 'from the extension')
+  console.log(request)
+  if (request.contentType == 'HTML') sendMessage(request)
+})

@@ -12,10 +12,12 @@ ipc.config.maxConnections = 1
 ipc.config.id = 'clipper'
 
 // pvh's extension ID is: fcanljfkfdhddpeikfmdojfclefaeioj
+console.error('appspace: ' + ipc.config.appspace)
 
 function handleMessage(req) {
   sendMessage({ message: 'forwarding to pushpin' })
   ipc.connectTo('renderer', () => {
+    sendMessage({ message: 'connected to pushpin' })
     ipc.of.renderer.on('connect', function() {
       ipc.of.renderer.emit('message', req)
       ipc.disconnect('renderer')
