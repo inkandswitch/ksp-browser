@@ -1,6 +1,6 @@
 @echo off
 
-set LOG=C:\Users\pvh\Desktop\log.txt
+set LOG=C:\Users\Peter\Desktop\log.txt
 
 time /t >> %LOG%
 

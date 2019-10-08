@@ -3,6 +3,7 @@
 import * as webpack from 'webpack'
 import * as path from 'path'
 import CopyPlugin from 'copy-webpack-plugin'
+import EncodingPlugin from 'webpack-encoding-plugin'
 
 const srcDir = './src/'
 
@@ -16,12 +17,6 @@ const config: webpack.Configuration = {
     path: path.join(__dirname, 'dist/'),
     filename: '[name].js',
   },
-  optimization: {
-    splitChunks: {
-      name: 'vendor',
-      chunks: 'initial',
-    },
-  },
   module: {
     rules: [
       {
@@ -34,7 +29,10 @@ const config: webpack.Configuration = {
   resolve: {
     extensions: ['.ts', '.tsx', '.js'],
   },
-  plugins: [new CopyPlugin([{ from: '.', to: '../dist' }], { context: 'public' })],
+  plugins: [
+    new CopyPlugin([{ from: '.', to: '../dist' }], { context: 'public' }),
+    new EncodingPlugin({ encoding: 'utf-8' }),
+  ],
 }
 
 module.exports = config

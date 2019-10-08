@@ -3,5 +3,5 @@
   "description": "PushPin",
   "path": "C:\\Program Files\\My Application\\chrome_native_messaging_host.exe",
   "type": "stdio",
-  "allowed_origins": ["chrome-extension://knldjmfmopnpolahpmmgbagdohdnhkik/"]
+  "allowed_origins": ["chrome-extension://bcggmhphgedpkojdkpjafoianjopnhmm/"]
 }

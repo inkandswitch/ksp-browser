@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "freeze-dry": "^0.2.4",
-    "native-messaging": "^1.0.0"
+    "native-messaging": "^1.0.0",
+    "node-ipc": "^9.1.1",
+    "webpack-encoding-plugin": "^0.3.1"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.89",

@@ -14,6 +14,7 @@ ipc.config.id = 'clipper'
 // pvh's extension ID is: fcanljfkfdhddpeikfmdojfclefaeioj
 
 function handleMessage(req) {
+  sendMessage({ message: 'forwarding to pushpin' })
   ipc.connectTo('renderer', () => {
     ipc.of.renderer.on('connect', function() {
       ipc.of.renderer.emit('message', req)

@@ -3,5 +3,5 @@
   "description": "Pushpin",
   "path": "native-messaging-host.bat",
   "type": "stdio",
-  "allowed_origins": ["chrome-extension://fcanljfkfdhddpeikfmdojfclefaeioj/"]
+  "allowed_origins": ["chrome-extension://bcggmhphgedpkojdkpjafoianjopnhmm/"]
 }
