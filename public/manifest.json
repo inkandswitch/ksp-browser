@@ -1,5 +1,6 @@
 {
   "name": "Pushpin Clipper",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAx9KNTcOARpc3Yn8EvjvghwNRtarQk6PsXtLsi3iSQheDnsVhOQsGY0WypbQMBIrpd87cvav0ps7yzBTpldP5huLtqVPfr1f5iqbqsCuj+md/lclndExOKfIqJ9niJroJqHUp5tGX7gVBNFfhvb42XfXhmCXP+lP6GH7/rc4bhCbxgmveCyofH2RC5KEVKivzs7pugK7K8YaW/G8P4cUB8U5KCdiLNzRAw8EnMPNDorkOLdS2S2VwfWXyfFPhI6lB08qHGI7Jun4cyUCBCs+T092nqeLb50MPJTgi5RTstfFUhsrzc/sF4pm6uc6392Em5P1x3aazcoA50xmnbBh/owIDAQAB",
   "description": "Send the contents of the active tab to Pushpin.",
   "version": "0.1",
   "permissions": ["background", "nativeMessaging", "activeTab", "contextMenus", "*://*/*"],
