@@ -1,7 +1,9 @@
 import sendMessage from './extension-messaging'
 
+let feedbackTimerGlobal
+
 chrome.contextMenus.onClicked.addListener((itemData) => {
-  triggerActionFeedback()
+  startActionFeedback()
   console.log(itemData)
   if (itemData.selectionText) {
     chrome.tabs.executeScript(
@@ -47,23 +49,48 @@ chrome.runtime.onInstalled.addListener(() => {
 })
 
 chrome.browserAction.onClicked.addListener((tab) => {
-  triggerActionFeedback()
+  startActionFeedback()
   chrome.tabs.executeScript({
     file: 'content.js',
   })
 })
 
-function triggerActionFeedback() {
-  chrome.browserAction.setBadgeText({ text: 'OK' })
-  chrome.browserAction.setBadgeBackgroundColor({ color: 'green' })
-  setTimeout(() => {
-    chrome.browserAction.setBadgeText({ text: '' })
-    chrome.browserAction.setBadgeBackgroundColor({ color: 'green' })
+function updateBadge(text, color) {
+  chrome.browserAction.setBadgeText({ text })
+  chrome.browserAction.setBadgeBackgroundColor({ color })
+}
+
+function startActionFeedback() {
+  triggerActionFeedback('', 'green')
+}
+
+function triggerActionFeedback(text, color) {
+  updateBadge(text, color)
+  if (feedbackTimerGlobal) {
+    clearTimeout(feedbackTimerGlobal)
+  }
+  feedbackTimerGlobal = setTimeout(() => {
+    feedbackTimerGlobal = null
+    updateBadge('', color)
   }, 1000)
+}
+
+function clipperResponse(response) {
+  console.log(response)
+  switch (response.type) {
+    case 'Ack':
+      triggerActionFeedback('OK', 'green')
+      break
+    case 'Failed':
+      triggerActionFeedback('NO', 'red')
+      break
+    default:
+      triggerActionFeedback('?', 'yellow')
+  }
 }
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   // For now, all messages go to the native host. We might want to filter here
   // in the future.
-  sendMessage(request)
+  sendMessage(request, clipperResponse)
 })
