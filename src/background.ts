@@ -4,7 +4,6 @@ let feedbackTimerGlobal
 
 chrome.contextMenus.onClicked.addListener((itemData) => {
   startActionFeedback()
-  console.log(itemData)
   if (itemData.selectionText) {
     chrome.tabs.executeScript(
       {
@@ -76,20 +75,21 @@ function triggerActionFeedback(text, color) {
 }
 
 function clipperResponse(response) {
-  console.log(response)
   switch (response.type) {
     case 'Ack':
       triggerActionFeedback('OK', 'green')
       break
     case 'Failed':
+      console.log(response)
       triggerActionFeedback('NO', 'red')
       break
     default:
+      console.log(response)
       triggerActionFeedback('?', 'yellow')
   }
 }
 
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   // For now, all messages go to the native host. We might want to filter here
   // in the future.
   sendMessage(request, clipperResponse)
