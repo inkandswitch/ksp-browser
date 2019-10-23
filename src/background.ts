@@ -9,7 +9,7 @@ chrome.contextMenus.onClicked.addListener((itemData) => {
         code: 'window.getSelection().toString();',
       },
       (selection) => {
-        sendMessage({ contentType: 'Text', content: selection[0] })
+        sendMessage({ dataUrl: `data:text/plain,${selection[0]}` })
       }
     )
   }
@@ -33,7 +33,7 @@ chrome.contextMenus.onClicked.addListener((itemData) => {
       }
       context.drawImage(tmpImage, 0, 0)
 
-      sendMessage({ contentType: 'Image', content: canvas.toDataURL() })
+      sendMessage({ dataUrl: canvas.toDataURL() })
     }
   }
 })
@@ -63,7 +63,7 @@ function triggerActionFeedback() {
 }
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  console.log(sender.tab ? 'from a content script:' + sender.tab.url : 'from the extension')
-  console.log(request)
-  if (request.contentType == 'HTML') sendMessage(request)
+  // For now, all messages go to the native host. We might want to filter here
+  // in the future.
+  sendMessage(request)
 })
