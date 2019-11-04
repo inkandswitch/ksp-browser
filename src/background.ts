@@ -10,7 +10,11 @@ chrome.contextMenus.onClicked.addListener((itemData) => {
         code: 'window.getSelection().toString();',
       },
       (selection) => {
-        sendMessage({ dataUrl: `data:text/plain,${selection[0]}` })
+        sendMessage({
+          src: window.location.href,
+          capturedAt: Date.now(),
+          dataUrl: `data:text/plain,${selection[0]}`,
+        })
       }
     )
   }
@@ -34,7 +38,11 @@ chrome.contextMenus.onClicked.addListener((itemData) => {
       }
       context.drawImage(tmpImage, 0, 0)
 
-      sendMessage({ dataUrl: canvas.toDataURL() })
+      sendMessage({
+        src: itemData.srcUrl,
+        capturedAt: Date.now(),
+        dataUrl: canvas.toDataURL(),
+      })
     }
   }
 })
@@ -76,7 +84,7 @@ function startActionFeedback() {
     feedbackTimerGlobal = null
     updateBadge('', '#00000000')
     chrome.browserAction.enable()
-  }, 2000)
+  }, 20000)
 }
 
 function triggerActionFeedback(text, color) {
