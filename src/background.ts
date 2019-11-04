@@ -49,18 +49,34 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.browserAction.onClicked.addListener((tab) => {
   startActionFeedback()
-  chrome.tabs.executeScript({
-    file: 'content.js',
-  })
+  chrome.tabs.executeScript(
+    {
+      file: 'content.js',
+    },
+    () => {
+      let e = chrome.runtime.lastError
+      if (e !== undefined) {
+        console.log('error during executeScript')
+        triggerActionFeedback('❌', '')
+      }
+    }
+  )
 })
 
 function updateBadge(text, color) {
   chrome.browserAction.setBadgeText({ text })
-  chrome.browserAction.setBadgeBackgroundColor({ color })
+  chrome.browserAction.setBadgeBackgroundColor({ color: [255, 255, 255, 0] })
 }
 
 function startActionFeedback() {
-  triggerActionFeedback('', 'green')
+  updateBadge('🔄', '#00000000')
+  chrome.browserAction.disable()
+
+  feedbackTimerGlobal = setTimeout(() => {
+    feedbackTimerGlobal = null
+    updateBadge('', '#00000000')
+    chrome.browserAction.enable()
+  }, 2000)
 }
 
 function triggerActionFeedback(text, color) {
@@ -71,25 +87,26 @@ function triggerActionFeedback(text, color) {
   feedbackTimerGlobal = setTimeout(() => {
     feedbackTimerGlobal = null
     updateBadge('', color)
-  }, 1000)
+    chrome.browserAction.enable()
+  }, 2000)
 }
 
 function clipperResponse(response) {
   switch (response.type) {
     case 'Ack':
-      triggerActionFeedback('OK', 'green')
+      triggerActionFeedback('✔️', '')
       break
     case 'Failed':
       console.log(response)
-      triggerActionFeedback('NO', 'red')
+      triggerActionFeedback('❌', '')
       break
     default:
       console.log(response)
-      triggerActionFeedback('?', 'yellow')
+      triggerActionFeedback('❓', '')
   }
 }
 
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   // For now, all messages go to the native host. We might want to filter here
   // in the future.
   sendMessage(request, clipperResponse)
