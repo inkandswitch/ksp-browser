@@ -1,6 +1,7 @@
 import sendMessage from './extension-messaging'
 
 let feedbackTimerGlobal
+let terminateTimerGlobal
 
 chrome.contextMenus.onClicked.addListener((itemData) => {
   startActionFeedback()
@@ -65,52 +66,75 @@ chrome.browserAction.onClicked.addListener((tab) => {
       let e = chrome.runtime.lastError
       if (e !== undefined) {
         console.log('error during executeScript')
-        triggerActionFeedback('❌', '')
+        responseFeedback('❌')
       }
     }
   )
 })
 
-function updateBadge(text, color) {
+function updateBadge(text) {
+  console.log(text)
   chrome.browserAction.setBadgeText({ text })
-  chrome.browserAction.setBadgeBackgroundColor({ color: [255, 255, 255, 0] })
+}
+
+function* actionFeedback() {
+  // const cycle = '◴◷◶◵'
+  // const cycle = '⠁⠂⠄⡀⢀⠠⠐⠈'
+  // const cycle = '◢◣◤◥'
+  const cycle = '⠁⠂⠄⠠⠐⠈'
+  const chars = cycle.split('')
+  let i = 0
+  while (true) {
+    i = i + 1
+    const next = ' ' + chars[i % chars.length] + ' '
+    yield next
+  }
+}
+
+function runActionFeedback(badgeGenerator = actionFeedback()) {
+  updateBadge(badgeGenerator.next().value)
+
+  feedbackTimerGlobal = setTimeout(() => {
+    runActionFeedback(badgeGenerator)
+  }, 500)
 }
 
 function startActionFeedback() {
-  updateBadge('🔄', '#00000000')
-  chrome.browserAction.disable()
-
-  feedbackTimerGlobal = setTimeout(() => {
-    feedbackTimerGlobal = null
-    updateBadge('', '#00000000')
-    chrome.browserAction.enable()
-  }, 20000)
+  runActionFeedback()
+  terminateTimerGlobal = setTimeout(() => responseFeedback('❌'), 20000)
 }
 
-function triggerActionFeedback(text, color) {
-  updateBadge(text, color)
+function endFeedback() {
+  clearTimeout(feedbackTimerGlobal)
+  clearTimeout(terminateTimerGlobal)
+  feedbackTimerGlobal = null
+  terminateTimerGlobal = null
+  updateBadge('')
+  chrome.browserAction.enable()
+}
+
+function responseFeedback(text) {
+  updateBadge(text)
   if (feedbackTimerGlobal) {
     clearTimeout(feedbackTimerGlobal)
   }
   feedbackTimerGlobal = setTimeout(() => {
-    feedbackTimerGlobal = null
-    updateBadge('', color)
-    chrome.browserAction.enable()
+    endFeedback()
   }, 2000)
 }
 
 function clipperResponse(response) {
   switch (response.type) {
     case 'Ack':
-      triggerActionFeedback('✔️', '')
+      responseFeedback('✔️')
       break
     case 'Failed':
       console.log(response)
-      triggerActionFeedback('❌', '')
+      responseFeedback('❌')
       break
     default:
       console.log(response)
-      triggerActionFeedback('❓', '')
+      responseFeedback('❓')
   }
 }
 
