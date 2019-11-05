@@ -73,7 +73,6 @@ chrome.browserAction.onClicked.addListener((tab) => {
 })
 
 function updateBadge(text) {
-  console.log(text)
   chrome.browserAction.setBadgeText({ text })
 }
 
