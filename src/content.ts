@@ -4,7 +4,7 @@ if (document.querySelector('embed[type="application/pdf"]')) {
   const msg = {
     src: window.location.href,
     dataUrl: `data:text/plain,${window.location.href}`,
-    capturedAt: Date.now(),
+    capturedAt: new Date().toISOString(),
   }
   chrome.runtime.sendMessage(msg)
 } else {
@@ -12,7 +12,7 @@ if (document.querySelector('embed[type="application/pdf"]')) {
     const msg = {
       src: window.location.href,
       dataUrl: `data:text/html,${encodeURIComponent(html)}`,
-      capturedAt: Date.now(),
+      capturedAt: new Date().toISOString(),
     }
     chrome.runtime.sendMessage(msg)
   })

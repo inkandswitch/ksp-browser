@@ -13,7 +13,7 @@ chrome.contextMenus.onClicked.addListener((itemData) => {
       (selection) => {
         sendMessage({
           src: window.location.href,
-          capturedAt: Date.now(),
+          capturedAt: new Date().toISOString(),
           dataUrl: `data:text/plain,${selection[0]}`,
         })
       }
@@ -41,7 +41,7 @@ chrome.contextMenus.onClicked.addListener((itemData) => {
 
       sendMessage({
         src: itemData.srcUrl,
-        capturedAt: Date.now(),
+        capturedAt: new Date().toISOString(),
         dataUrl: canvas.toDataURL(),
       })
     }
