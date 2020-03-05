@@ -3,12 +3,14 @@
 import * as webpack from 'webpack'
 import * as path from 'path'
 import CopyPlugin from 'copy-webpack-plugin'
+// @ts-ignore
 import TerserPlugin from 'terser-webpack-plugin'
 
 const srcDir = './src/'
 
 const config: webpack.Configuration = {
   mode: 'production',
+  devtool: 'inline-source-map',
   entry: {
     background: path.join(__dirname, srcDir + 'background.ts'),
     content: path.join(__dirname, srcDir + 'content.ts'),

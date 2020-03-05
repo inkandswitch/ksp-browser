@@ -1,33 +1,51 @@
-import sendMessage from './extension-messaging'
+let feedbackTimerGlobal: any
+let terminateTimerGlobal: any
 
-let feedbackTimerGlobal
-let terminateTimerGlobal
-
-chrome.contextMenus.onClicked.addListener((itemData) => {
+const onContextMenuAction = async (itemData: chrome.contextMenus.OnClickData) => {
   startActionFeedback()
   if (itemData.selectionText) {
-    chrome.tabs.executeScript(
-      {
-        code: 'window.getSelection().toString();',
-      },
-      (selection) => {
-        sendMessage({
-          src: window.location.href,
-          capturedAt: new Date().toISOString(),
-          dataUrl: `data:text/plain,${selection[0]}`,
-        })
-      }
-    )
+    const clip = await clipSelection()
+    console.log(clip)
   }
-  if (itemData.mediaType === 'image') {
+
+  if (itemData.mediaType === 'image' && itemData.srcUrl) {
+    const clip = await clipImage(itemData.srcUrl)
+    console.log(clip)
+  }
+}
+
+const onBrowserAction = async (tab: chrome.tabs.Tab) => {
+  startActionFeedback()
+  try {
+    await archiveTab()
+  } catch (error) {
+    console.log('error during executeScript')
+    responseFeedback('❌')
+  }
+}
+
+const clipSelection = async () => {
+  const selection = await executeFunction(() => {
+    const selection = window.getSelection()
+    return selection ? selection.toString() : null
+  })
+
+  if (selection) {
+    return {
+      src: window.location.href,
+      capturedAt: new Date().toISOString(),
+      dataUrl: `data:text/plain,${selection[0]}`,
+    }
+  }
+}
+
+const clipImage = (url: string) =>
+  new Promise((resolve, reject) => {
     const tmpImage = new Image()
     const canvas = document.createElement('canvas')
 
     tmpImage.crossOrigin = 'anonymous'
-    if (!itemData.srcUrl) {
-      throw new Error('no srcUrl for an image!')
-    }
-    tmpImage.src = itemData.srcUrl
+    tmpImage.src = url
 
     tmpImage.onload = () => {
       canvas.width = tmpImage.width
@@ -35,44 +53,42 @@ chrome.contextMenus.onClicked.addListener((itemData) => {
 
       const context = canvas.getContext('2d')
       if (!context) {
-        throw new Error('Failed to get a 2d context for the canvas!')
+        return reject(new Error('Failed to get a 2d context for the canvas!'))
       }
       context.drawImage(tmpImage, 0, 0)
 
-      sendMessage({
-        src: itemData.srcUrl,
+      resolve({
+        src: url,
         capturedAt: new Date().toISOString(),
         dataUrl: canvas.toDataURL(),
       })
     }
-  }
-})
-
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: 'pushpin-clipper',
-    title: 'Send to Pushpin',
-    contexts: ['selection', 'image'], // ContextType
+    tmpImage.onerror = reject
   })
-})
 
-chrome.browserAction.onClicked.addListener((tab) => {
-  startActionFeedback()
-  chrome.tabs.executeScript(
-    {
-      file: 'content.js',
-    },
-    () => {
-      let e = chrome.runtime.lastError
-      if (e !== undefined) {
-        console.log('error during executeScript')
-        responseFeedback('❌')
+const archiveTab = () => executeScript({ file: 'content.js' })
+
+const executeScript = (details: chrome.tabs.InjectDetails): Promise<any> =>
+  new Promise((resolve, reject) => {
+    chrome.tabs.executeScript(details, (results) => {
+      const error = chrome.runtime.lastError
+      if (error !== undefined) {
+        reject(error)
+      } else {
+        resolve(results)
       }
-    }
-  )
-})
+    })
+  })
 
-function updateBadge(text) {
+const executeFunction = <a>(fn: () => a, details: chrome.tabs.InjectDetails = {}): Promise<a> => {
+  delete details.file
+  return executeScript({
+    ...details,
+    code: `(${fn})()`,
+  })
+}
+
+function updateBadge(text: string) {
   chrome.browserAction.setBadgeText({ text })
 }
 
@@ -91,7 +107,7 @@ function* actionFeedback() {
 }
 
 function runActionFeedback(badgeGenerator = actionFeedback()) {
-  updateBadge(badgeGenerator.next().value)
+  updateBadge(badgeGenerator.next().value || '')
 
   feedbackTimerGlobal = setTimeout(() => {
     runActionFeedback(badgeGenerator)
@@ -112,7 +128,7 @@ function endFeedback() {
   chrome.browserAction.enable()
 }
 
-function responseFeedback(text) {
+function responseFeedback(text: string) {
   updateBadge(text)
   if (feedbackTimerGlobal) {
     clearTimeout(feedbackTimerGlobal)
@@ -122,7 +138,9 @@ function responseFeedback(text) {
   }, 2000)
 }
 
-function clipperResponse(response) {
+type ClipperResponse = { type: 'Ack' } | { type: 'Failed' }
+
+function clipperResponse(response: ClipperResponse) {
   switch (response.type) {
     case 'Ack':
       responseFeedback('✔️')
@@ -137,8 +155,18 @@ function clipperResponse(response) {
   }
 }
 
+chrome.browserAction.onClicked.addListener(onBrowserAction)
+chrome.contextMenus.onClicked.addListener(onContextMenuAction)
+
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   // For now, all messages go to the native host. We might want to filter here
   // in the future.
   sendMessage(request, clipperResponse)
 })
+
+const sendMessage = (message: any, callback?: Function) => {
+  console.log(message)
+  if (callback) {
+    callback({ type: 'Ack' })
+  }
+}

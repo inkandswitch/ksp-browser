@@ -4,7 +4,7 @@
   "description": "Send the contents of the active tab to Pushpin.",
   "version": "0.2",
   "icons": { "128": "icon-128.png" },
-  "permissions": ["background", "nativeMessaging", "activeTab", "contextMenus", "*://*/*"],
+  "permissions": ["background", "activeTab", "contextMenus", "*://*/*"],
   "background": {
     "scripts": ["background.js"],
     "persistent": false

@@ -12,6 +12,7 @@
     "freeze-dry": "^0.2.4"
   },
   "devDependencies": {
+    "@types/freeze-dry": "file:./@types/freeze-dry",
     "@types/chrome": "^0.0.89",
     "@types/copy-webpack-plugin": "^5.0.0",
     "@types/node": "^12.7.11",
