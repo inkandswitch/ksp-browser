@@ -2,7 +2,7 @@ let feedbackTimerGlobal: any
 let terminateTimerGlobal: any
 
 const onContextMenuAction = async (itemData: chrome.contextMenus.OnClickData) => {
-  startActionFeedback()
+  // startActionFeedback()
   if (itemData.selectionText) {
     const clip = await clipSelection()
     console.log(clip)
@@ -15,7 +15,7 @@ const onContextMenuAction = async (itemData: chrome.contextMenus.OnClickData) =>
 }
 
 const onBrowserAction = async (tab: chrome.tabs.Tab) => {
-  startActionFeedback()
+  // startActionFeedback()
   try {
     await archiveTab()
   } catch (error) {
