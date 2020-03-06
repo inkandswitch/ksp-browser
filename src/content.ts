@@ -7,7 +7,7 @@ class DocumentSelection {
   selection: Selection
   static get(document: Document): null | DocumentSelection {
     const selection = document.getSelection()
-    if (selection && selection.type != 'None') {
+    if (selection && selection.type == 'Range') {
       return new DocumentSelection(document, selection)
     } else {
       return null
@@ -120,7 +120,10 @@ const onload = async () => {
   const selection = DocumentSelection.get(document)
   const cardData = selection ? await service.clipSelection(selection) : await service.scrape(source)
   const card = viewCard(cardData)
-  dialog.append(card)
+  const details = html`
+    <details ${{ style: style.details }}><pre>${JSON.stringify(cardData, null, 2)}</pre></details>
+  `
+  dialog.append(card, details)
 
   const content = await freezeDry(source, { addMetadata: true })
   const archiveURL = `data:text/html,${encodeURIComponent(content)}`
@@ -212,6 +215,12 @@ const normalizeName = (key: string) => {
 }
 
 const style = {
+  details: {
+    backgroundColor: 'white',
+    borderRadius: '4px',
+    fontSize: '12px',
+    margin: '4px',
+  },
   closeButton: {
     height: '50px',
     width: '20px',
