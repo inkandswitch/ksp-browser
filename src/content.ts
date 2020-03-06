@@ -429,9 +429,9 @@ const service = {
     const images = concat([imgs, scrapeHeroImgUrls(document.documentElement)])
     const hero = [...take(1, images)]
     const description = selection.toText()
-    const selector = [getRangeSelector(firstRange)]
+    const selector = getRangeSelector(firstRange)
 
-    return { url, icon, hero, title, description, name, selector }
+    return { url, icon, hero, title, description, name, selector: [selector] }
   },
 
   async archive(document: Document = window.document): Promise<ArchiveData> {
@@ -754,14 +754,10 @@ const findHeroImgUrls = (
   pageEl: Document | Element | DocumentFragment,
   isQualified: (image: HTMLImageElement) => boolean = isImgHeroSize
 ) => {
-  const candidates = [...(<Iterable<HTMLImageElement>>query('img', identity, pageEl))]
-  console.log(candidates)
-  const heroSized = [...filter(isQualified, candidates)]
-  console.log(heroSized)
-  const urls = [...map(getSrc, heroSized)]
-  console.log(urls)
+  const candidates = <Iterable<HTMLImageElement>>query('img', identity, pageEl)
+  const heroSized = filter(isQualified, candidates)
+  const urls = map(getSrc, heroSized)
 
-  console.log('------------------------------')
   // can be a lot of images we limit to 4
   return take(4, filter(isntEmpty, urls))
 }
