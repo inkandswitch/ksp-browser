@@ -159,8 +159,6 @@ chrome.browserAction.onClicked.addListener(onBrowserAction)
 chrome.contextMenus.onClicked.addListener(onContextMenuAction)
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  // For now, all messages go to the native host. We might want to filter here
-  // in the future.
   sendMessage(request, clipperResponse)
 })
 

@@ -19,3 +19,10 @@ The `dist` directory contains the manifest file and the extension source.
 
 You can excerpt content from the web page by clicking a toolbar button (in the top-right). If you
 have a selection it gets clipped otherwise generic page summary is excerpt.
+
+## Credits
+
+Software by Irakli Gozalishvili & Peter van Hardenberg
+Based on Pushpin Clipper by Peter van Hardenberg
+Icon, "Scissors" by Christopher T. Howlett from the Noun Project
+.pt domain name courtesy of Portugal (obrigado!)
