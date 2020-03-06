@@ -30,6 +30,8 @@ const onBrowserAction = () => {
       left: Math.round(left),
     })
   })
+
+  executeScript({ file: 'content.js' })
 }
 
 const clipSelection = async () => {

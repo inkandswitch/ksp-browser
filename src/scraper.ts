@@ -1,5 +1,7 @@
-// FIXME: scraper shouldn't need freeze-dry
-import freezeDry from 'freeze-dry'
+import { resolveSelector, getRangeSelector, Selector } from './web-annotation'
+import { RangeSelection } from './selection'
+
+// Selection that isn't empty
 
 export type ScrapeData = {
   url: string
@@ -8,6 +10,8 @@ export type ScrapeData = {
   title: string
   description: string
   name: string
+
+  selector: null | Selector[]
 }
 
 export type ArchiveData = {
@@ -29,91 +33,116 @@ export type HostMessage =
   | { type: 'scraped'; scraped: ScrapeData }
   | { type: 'archived'; archived: ArchiveData }
 
-export const service = {
-  async scrape(document: Document = window.document): Promise<ScrapeData> {
-    /*
-        Pull structured content out of the DOM.
-        - Hero images
-        - Title
-        - Summary
-        - Site name
-        - Article content
-        Things we can use:
-        - `<title>`
-        - meta description
-        - Twitter card meta tags
-        - Facebook Open Graph tags
-        - Win8 Tile meta tags
-        - meta description
-        - Search snippet things like schema.org
-        - microformats
-        https://github.com/mozilla/readability
-        http://schema.org/CreativeWork
-        https://dev.twitter.com/cards/markup
-        https://developers.facebook.com/docs/sharing/webmasters#markup
-        https://developer.apple.com/library/ios/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html
-        http://blogs.msdn.com/b/ie/archive/2014/05/21/support-a-live-tile-for-your-website-on-windows-and-windows-phone-8-1.aspx
-        http://www.oembed.com/
-        https://developer.chrome.com/multidevice/android/installtohomescreen
-        */
-
-    // Utils
-    // -----------------------------------------------------------------------------
-
-    // Scraping and content scoring helpers
-    // -----------------------------------------------------------------------------
-
-    // @TODO need some methods for scaling and cropping images.
-
-    await service.loaded()
-
-    return {
-      url: document.URL,
-      icon: scrapeIcon(document.documentElement),
-      hero: <string[]>[...scrapeHeroImgUrls(document.documentElement)],
-      title: scrapeTitle(document.documentElement, ''),
-      description: scrapeDescription(document.documentElement, ''),
-      name: scrapeSiteName(document.documentElement, ''),
+const scape = () => {
+  if (document.querySelector('embed[type="application/pdf"]')) {
+    const msg = {
+      src: window.location.href,
+      dataUrl: `data:text/plain,${window.location.href}`,
+      capturedAt: new Date().toISOString(),
     }
-  },
-
-  async archive(document: Document = window.document): Promise<ArchiveData> {
-    const base = baseURL(document.URL)
-    const data = new FormData()
-    const root = freezeDry(document, {
-      signal: null,
-      resolveURL: async (resource: { url: string; blob(): Promise<Blob> }) => {
-        const blob = await resource.blob()
-        const url = new URL(makeRelative(resource.url), base)
-        data.set(url.href, blob)
-        return url.href
-      },
-    })
-    const blob = root.blob()
-
-    data.set('/', blob)
-    const bytes = await new Response(data).arrayBuffer()
-    return { url: document.URL, data: bytes }
-  },
-  loaded() {
-    return new window.Promise((resolve) => {
-      if (document.readyState === 'complete') {
-        resolve()
-      } else {
-        const listener = (_event: Event) => {
-          window.removeEventListener('load', listener)
-          resolve()
-        }
-
-        window.addEventListener('load', listener)
+    chrome.runtime.sendMessage(msg)
+  } else {
+    freezeDry(document, { addMetadata: true }).then((html: string) => {
+      const msg = {
+        src: window.location.href,
+        dataUrl: `data:text/html,${encodeURIComponent(html)}`,
+        capturedAt: new Date().toISOString(),
       }
+      chrome.runtime.sendMessage(msg)
     })
-  },
-
-  send(channel: MessageChannel, message: HostMessage, transfer: ArrayBuffer[] = []) {
-    channel.port1.postMessage(message, transfer)
-  },
+  }
 }
+
+export const clip = (document: Document): Promise<ScrapeData> => {
+  const selection = RangeSelection.get(document)
+  return selection ? clipSelection(selection) : clipSummary(document)
+}
+
+export const clipSummary = async (document: Document): Promise<ScrapeData> => {
+  /*
+      Pull structured content out of the DOM.
+      - Hero images
+      - Title
+      - Summary
+      - Site name
+      - Article content
+      Things we can use:
+      - `<title>`
+      - meta description
+      - Twitter card meta tags
+      - Facebook Open Graph tags
+      - Win8 Tile meta tags
+      - meta description
+      - Search snippet things like schema.org
+      - microformats
+      https://github.com/mozilla/readability
+      http://schema.org/CreativeWork
+      https://dev.twitter.com/cards/markup
+      https://developers.facebook.com/docs/sharing/webmasters#markup
+      https://developer.apple.com/library/ios/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html
+      http://blogs.msdn.com/b/ie/archive/2014/05/21/support-a-live-tile-for-your-website-on-windows-and-windows-phone-8-1.aspx
+      http://www.oembed.com/
+      https://developer.chrome.com/multidevice/android/installtohomescreen
+      */
+
+  // Utils
+  // -----------------------------------------------------------------------------
+
+  // Scraping and content scoring helpers
+  // -----------------------------------------------------------------------------
+
+  // @TODO need some methods for scaling and cropping images.
+
+  await loaded(document)
+
+  return {
+    url: document.URL,
+    icon: scrapeIcon(document.documentElement),
+    hero: [...scrapeHeroImgUrls(document.documentElement)],
+    title: scrapeTitle(document.documentElement, ''),
+    description: scrapeDescription(document.documentElement, ''),
+    name: scrapeSiteName(document.documentElement, ''),
+    selector: null,
+  }
+}
+
+export const clipSelection = async (selection: RangeSelection): Promise<ScrapeData> => {
+  const { document } = selection
+  const url = document.URL
+  const icon = scrapeIcon(document.documentElement)
+  const title = scrapeTitle(document.documentElement, '')
+  const name = scrapeSiteName(document.documentElement, '')
+  const [firstRange] = selection.ranges()
+
+  // First try scraping images from content, then fall back to scraping from the document.
+  // We just pick the first one.
+  let imgs = [
+    ...findHeroImgUrls(
+      <Element>firstRange.commonAncestorContainer,
+      (image) => selection.selection.containsNode(image) && isImgSizeAtLeast(image, 200, 100)
+    ),
+  ]
+  const images = concat([imgs, scrapeHeroImgUrls(document.documentElement)])
+  const hero = [...take(1, images)]
+  const description = selection.toText()
+  const selector = getRangeSelector(firstRange)
+
+  return { url, icon, hero, title, description, name, selector: [selector] }
+}
+
+const loaded = (document: Document) =>
+  new Promise((resolve) => {
+    if (document.readyState === 'complete') {
+      resolve()
+    } else {
+      const listener = (_event: Event) => {
+        document.removeEventListener('load', listener)
+        resolve()
+      }
+
+      document.addEventListener('load', listener)
+    }
+  })
 
 // Function
 
@@ -175,7 +204,7 @@ const first = <a>(iterable: Iterable<a>, fallback: a): a => {
 const query = function*<a>(
   selector: string,
   decode: (el: Element) => null | a,
-  root: Document | Element
+  root: Document | Element | DocumentFragment
 ): Iterable<a> {
   const elements = [...(<any>root.querySelectorAll(selector))]
   for (const element of elements) {
@@ -364,7 +393,7 @@ const isImgHeroSize = (imgEl: HTMLImageElement) => isImgSizeAtLeast(imgEl, 480, 
 // Collect Twitter image urls from meta tags.
 // Returns an array of 1 or more Twitter img urls, or null.
 // See https://dev.twitter.com/cards/markup.
-const queryTwitterImgUrls = (pageEl: Element) =>
+const queryTwitterImgUrls = (pageEl: Document | Element | DocumentFragment) =>
   query(
     `
     meta[name="twitter:image"],
@@ -383,7 +412,7 @@ const queryTwitterImgUrls = (pageEl: Element) =>
 // These 2 meta tags are equivalent. If the first doesn't exist, look for
 // the second.
 // See https://developers.facebook.com/docs/sharing/webmasters#images.
-const queryOpenGraphImgUrls = (el: Element) =>
+const queryOpenGraphImgUrls = (el: Document | Element | DocumentFragment) =>
   query(
     `
     meta[property="og:image"],
@@ -393,10 +422,14 @@ const queryOpenGraphImgUrls = (el: Element) =>
     el
   )
 
-const findHeroImgUrls = (pageEl: Element) => {
+const findHeroImgUrls = (
+  pageEl: Document | Element | DocumentFragment,
+  isQualified: (image: HTMLImageElement) => boolean = isImgHeroSize
+) => {
   const candidates = <Iterable<HTMLImageElement>>query('img', identity, pageEl)
-  const heroSized = filter(isImgHeroSize, candidates)
+  const heroSized = filter(isQualified, candidates)
   const urls = map(getSrc, heroSized)
+
   // can be a lot of images we limit to 4
   return take(4, filter(isntEmpty, urls))
 }
@@ -406,7 +439,7 @@ const findHeroImgUrls = (pageEl: Element) => {
 // hand-curated. If we don't them, we'll dig through the content ourselves.
 // Returns an array of image urls.
 // @TODO it might be better just to grab everything, then de-dupe URLs.
-const scrapeHeroImgUrls = (el: HTMLElement) => {
+const scrapeHeroImgUrls = (el: Document | Element | DocumentFragment) => {
   // Note that Facebook OpenGraph image queries are kept seperate from Twitter
   // image queries. This is to prevent duplicates when sites include both.
   // If we find Twitter first, we'll return it and never look for Facebook.
