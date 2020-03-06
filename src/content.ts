@@ -1,5 +1,5 @@
 import freezeDry from 'freeze-dry'
-import { resolveSelector, getRangeSelector } from './web-annotation'
+import { resolveSelector, getRangeSelector, Selector } from './web-annotation'
 
 // Selection that isn't empty
 class DocumentSelection {
@@ -338,6 +338,8 @@ export type ScrapeData = {
   title: string
   description: string
   name: string
+
+  selector: null | Selector[]
 }
 
 export type ArchiveData = {
@@ -400,10 +402,11 @@ const service = {
     return {
       url: document.URL,
       icon: scrapeIcon(document.documentElement),
-      hero: <string[]>[...scrapeHeroImgUrls(document.documentElement)],
+      hero: [...scrapeHeroImgUrls(document.documentElement)],
       title: scrapeTitle(document.documentElement, ''),
       description: scrapeDescription(document.documentElement, ''),
       name: scrapeSiteName(document.documentElement, ''),
+      selector: null,
     }
   },
 
@@ -426,8 +429,9 @@ const service = {
     const images = concat([imgs, scrapeHeroImgUrls(document.documentElement)])
     const hero = [...take(1, images)]
     const description = selection.toText()
+    const selector = [getRangeSelector(firstRange)]
 
-    return { url, icon, hero, title, description, name }
+    return { url, icon, hero, title, description, name, selector }
   },
 
   async archive(document: Document = window.document): Promise<ArchiveData> {

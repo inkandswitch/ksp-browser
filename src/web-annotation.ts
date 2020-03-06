@@ -14,7 +14,7 @@ type FragmentSpecification =
   | 'http://www.w3.org/TR/SVG/'
   | 'http://www.idpf.org/epub/linking/cfi/epub-cfi.html'
 
-type Selector =
+export type Selector =
   | { type: 'CssSelector'; value: StringEncodedCSSSelector; refinedBy: void | Selector }
   | { type: 'XPathSelector'; value: XPath; refinedBy: void | Selector }
   | {
