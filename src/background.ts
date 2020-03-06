@@ -1,20 +1,18 @@
-let feedbackTimerGlobal: any
-let terminateTimerGlobal: any
-
 const onContextMenuAction = async (itemData: chrome.contextMenus.OnClickData) => {
-  startActionFeedback()
   if (itemData.selectionText) {
     const clip = await clipSelection()
     console.log(clip)
+    alert('no action taken')
   }
 
   if (itemData.mediaType === 'image' && itemData.srcUrl) {
     const clip = await clipImage(itemData.srcUrl)
     console.log(clip)
+    alert('no action taken')
   }
 }
 
-chrome.browserAction.onClicked.addListener(function() {
+const onBrowserAction = () => {
   chrome.windows.getCurrent(function(win) {
     var width = 440
     var height = 220
@@ -32,16 +30,6 @@ chrome.browserAction.onClicked.addListener(function() {
       left: Math.round(left),
     })
   })
-})
-
-const onBrowserAction = async (tab: chrome.tabs.Tab) => {
-  startActionFeedback()
-  try {
-    await archiveTab()
-  } catch (error) {
-    console.log('error during executeScript')
-    responseFeedback('❌')
-  }
 }
 
 const clipSelection = async () => {
@@ -86,8 +74,6 @@ const clipImage = (url: string) =>
     tmpImage.onerror = reject
   })
 
-const archiveTab = () => executeScript({ file: 'content.js' })
-
 const executeScript = (details: chrome.tabs.InjectDetails): Promise<any> =>
   new Promise((resolve, reject) => {
     chrome.tabs.executeScript(details, (results) => {
@@ -108,83 +94,5 @@ const executeFunction = <a>(fn: () => a, details: chrome.tabs.InjectDetails = {}
   })
 }
 
-function updateBadge(text: string) {
-  chrome.browserAction.setBadgeText({ text })
-}
-
-function* actionFeedback() {
-  // const cycle = '◴◷◶◵'
-  // const cycle = '⠁⠂⠄⡀⢀⠠⠐⠈'
-  // const cycle = '◢◣◤◥'
-  const cycle = '⠁⠂⠄⠠⠐⠈'
-  const chars = cycle.split('')
-  let i = 0
-  while (true) {
-    i = i + 1
-    const next = ' ' + chars[i % chars.length] + ' '
-    yield next
-  }
-}
-
-function runActionFeedback(badgeGenerator = actionFeedback()) {
-  updateBadge(badgeGenerator.next().value || '')
-
-  feedbackTimerGlobal = setTimeout(() => {
-    runActionFeedback(badgeGenerator)
-  }, 500)
-}
-
-function startActionFeedback() {
-  runActionFeedback()
-  terminateTimerGlobal = setTimeout(() => responseFeedback('❌'), 20000)
-}
-
-function endFeedback() {
-  clearTimeout(feedbackTimerGlobal)
-  clearTimeout(terminateTimerGlobal)
-  feedbackTimerGlobal = null
-  terminateTimerGlobal = null
-  updateBadge('')
-  chrome.browserAction.enable()
-}
-
-function responseFeedback(text: string) {
-  updateBadge(text)
-  if (feedbackTimerGlobal) {
-    clearTimeout(feedbackTimerGlobal)
-  }
-  feedbackTimerGlobal = setTimeout(() => {
-    endFeedback()
-  }, 2000)
-}
-
-type ClipperResponse = { type: 'Ack' } | { type: 'Failed' }
-
-function clipperResponse(response: ClipperResponse) {
-  switch (response.type) {
-    case 'Ack':
-      responseFeedback('✔️')
-      break
-    case 'Failed':
-      console.log(response)
-      responseFeedback('❌')
-      break
-    default:
-      console.log(response)
-      responseFeedback('❓')
-  }
-}
-
 chrome.browserAction.onClicked.addListener(onBrowserAction)
 chrome.contextMenus.onClicked.addListener(onContextMenuAction)
-
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  sendMessage(request, clipperResponse)
-})
-
-const sendMessage = (message: any, callback?: Function) => {
-  console.log(message)
-  if (callback) {
-    callback({ type: 'Ack' })
-  }
-}
