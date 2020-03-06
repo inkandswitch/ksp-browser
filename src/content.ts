@@ -1,15 +1,124 @@
 import freezeDry from 'freeze-dry'
+import { resolveSelector, getRangeSelector } from './web-annotation'
+
+// Selection that isn't empty
+class DocumentSelection {
+  document: Document
+  selection: Selection
+  static get(document: Document): null | DocumentSelection {
+    const selection = document.getSelection()
+    if (selection && selection.type != 'None') {
+      return new DocumentSelection(document, selection)
+    } else {
+      return null
+    }
+  }
+  *ranges() {
+    const { selection } = this
+    const count = selection.rangeCount
+    let index = 0
+    while (index < count) {
+      yield selection.getRangeAt(index++)
+    }
+  }
+  cloneContents() {
+    let fragment = this.document.createDocumentFragment()
+    for (const range of this.ranges()) {
+      const content = range.cloneContents()
+      fragment.append(content)
+    }
+    return fragment
+  }
+  *contents() {
+    for (let range of this.ranges()) {
+      const { startContainer, endContainer, commonAncestorContainer } = range
+
+      let root = commonAncestorContainer
+      let left = startContainer
+      let right = endContainer
+
+      // walk over all the nodes on the right of the
+      // range while going up the parent chain until
+      // the common ancestor is reached.
+      while (left.parentNode !== root) {
+        if (left.nextSibling != null) {
+          left = left.nextSibling
+          yield left
+        } else if (left.parentNode != null) {
+          left = left.parentNode
+        } else {
+          break
+        }
+      }
+
+      // Collect all the nodes to the left of the
+      // range end while gonig up the parent chain
+      // until common ancestor. We'll have to yeald that
+      // at the end.
+      const trailers = []
+      while (right.parentNode !== root) {
+        if (right.previousSibling != null) {
+          right = right.previousSibling
+          if (right === left) {
+            return
+          } else {
+            trailers.unshift(right)
+          }
+        } else if (right.parentNode != null) {
+          right = right.parentNode
+        } else {
+          break
+        }
+      }
+
+      let next = left.nextSibling
+      while (next !== right && next != null) {
+        yield next
+        next = next.nextSibling
+      }
+
+      yield* trailers
+    }
+  }
+  toText() {
+    let text = ''
+    for (const range of this.ranges()) {
+      const prefix = text === '' ? '' : '\n\n'
+      text += prefix + range.toString()
+    }
+    return text
+  }
+  constructor(document: Document, selection: Selection) {
+    this.document = document
+    this.selection = selection
+  }
+}
 
 const onload = async () => {
   // Create copy for scraping
   const source = <Document>document.cloneNode(true)
 
   const dialog = html`
-    <dialog ${{ style: style.dialog }}></dialog>
+    <dialog ${{ style: style.dialog }}>
+      <svg
+        class="xcrpt-close-button"
+        ${{ style: style.closeButton }}
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M 15.18 12 L 22.34 4.84 C 23.22 3.96 23.22 2.54 22.34 1.66 C 21.46 0.78 20.04 0.78 19.16 1.66 L 12 8.82 L 4.84 1.66 C 3.96 0.78 2.54 0.78 1.66 1.66 C 0.78 2.54 0.78 3.96 1.66 4.84 L 8.82 12 L 1.66 19.16 C 0.78 20.04 0.78 21.46 1.66 22.34 C 2.1 22.78 2.67 23 3.25 23 C 3.83 23 4.4 22.78 4.84 22.34 L 12 15.18 L 19.16 22.34 C 19.6 22.78 20.17 23 20.75 23 C 21.33 23 21.9 22.78 22.34 22.34 C 23.22 21.46 23.22 20.04 22.34 19.16 L 15.18 12 Z"
+        />
+      </svg>
+    </dialog>
   `
   document.body.append(dialog)
+  dialog.querySelector('svg')!.onclick = () => dialog.remove()
 
-  const cardData = await service.scrape(source)
+  const selection = DocumentSelection.get(document)
+  const cardData = selection ? await service.clipSelection(selection) : await service.scrape(source)
   const card = viewCard(cardData)
   dialog.append(card)
 
@@ -103,6 +212,18 @@ const normalizeName = (key: string) => {
 }
 
 const style = {
+  closeButton: {
+    height: '50px',
+    width: '20px',
+    marginRight: '10px',
+    top: 0,
+    zIndex: 2,
+    opacity: 1,
+    position: 'fixed',
+    right: '5px',
+    cursor: 'pointer',
+    fillColor: 'black',
+  },
   dialog: {
     padding: '20px',
     fontFamily: 'Helvetica, sans-serif',
@@ -117,6 +238,7 @@ const style = {
     inset: '0px',
     margin: '0px',
     border: 'none',
+    zIndex: 999999,
   },
   frame: {
     width: '600px',
@@ -285,6 +407,29 @@ const service = {
     }
   },
 
+  async clipSelection(selection: DocumentSelection): Promise<ScrapeData> {
+    const { document } = selection
+    const url = document.URL
+    const icon = scrapeIcon(document.documentElement)
+    const title = scrapeTitle(document.documentElement, '')
+    const name = scrapeSiteName(document.documentElement, '')
+    const [firstRange] = selection.ranges()
+
+    // First try scraping images from content, then fall back to scraping from the document.
+    // We just pick the first one.
+    let imgs = [
+      ...findHeroImgUrls(
+        <Element>firstRange.commonAncestorContainer,
+        (image) => selection.selection.containsNode(image) && isImgSizeAtLeast(image, 200, 100)
+      ),
+    ]
+    const images = concat([imgs, scrapeHeroImgUrls(document.documentElement)])
+    const hero = [...take(1, images)]
+    const description = selection.toText()
+
+    return { url, icon, hero, title, description, name }
+  },
+
   async archive(document: Document = window.document): Promise<ArchiveData> {
     const base = baseURL(document.URL)
     const data = new FormData()
@@ -383,7 +528,7 @@ const first = <a>(iterable: Iterable<a>, fallback: a): a => {
 const query = function*<a>(
   selector: string,
   decode: (el: Element) => null | a,
-  root: Document | Element
+  root: Document | Element | DocumentFragment
 ): Iterable<a> {
   const elements = [...(<any>root.querySelectorAll(selector))]
   for (const element of elements) {
@@ -572,7 +717,7 @@ const isImgHeroSize = (imgEl: HTMLImageElement) => isImgSizeAtLeast(imgEl, 480, 
 // Collect Twitter image urls from meta tags.
 // Returns an array of 1 or more Twitter img urls, or null.
 // See https://dev.twitter.com/cards/markup.
-const queryTwitterImgUrls = (pageEl: Element) =>
+const queryTwitterImgUrls = (pageEl: Document | Element | DocumentFragment) =>
   query(
     `
     meta[name="twitter:image"],
@@ -591,7 +736,7 @@ const queryTwitterImgUrls = (pageEl: Element) =>
 // These 2 meta tags are equivalent. If the first doesn't exist, look for
 // the second.
 // See https://developers.facebook.com/docs/sharing/webmasters#images.
-const queryOpenGraphImgUrls = (el: Element) =>
+const queryOpenGraphImgUrls = (el: Document | Element | DocumentFragment) =>
   query(
     `
     meta[property="og:image"],
@@ -601,10 +746,18 @@ const queryOpenGraphImgUrls = (el: Element) =>
     el
   )
 
-const findHeroImgUrls = (pageEl: Element) => {
-  const candidates = <Iterable<HTMLImageElement>>query('img', identity, pageEl)
-  const heroSized = filter(isImgHeroSize, candidates)
-  const urls = map(getSrc, heroSized)
+const findHeroImgUrls = (
+  pageEl: Document | Element | DocumentFragment,
+  isQualified: (image: HTMLImageElement) => boolean = isImgHeroSize
+) => {
+  const candidates = [...(<Iterable<HTMLImageElement>>query('img', identity, pageEl))]
+  console.log(candidates)
+  const heroSized = [...filter(isQualified, candidates)]
+  console.log(heroSized)
+  const urls = [...map(getSrc, heroSized)]
+  console.log(urls)
+
+  console.log('------------------------------')
   // can be a lot of images we limit to 4
   return take(4, filter(isntEmpty, urls))
 }
@@ -614,7 +767,7 @@ const findHeroImgUrls = (pageEl: Element) => {
 // hand-curated. If we don't them, we'll dig through the content ourselves.
 // Returns an array of image urls.
 // @TODO it might be better just to grab everything, then de-dupe URLs.
-const scrapeHeroImgUrls = (el: HTMLElement) => {
+const scrapeHeroImgUrls = (el: Document | Element | DocumentFragment) => {
   // Note that Facebook OpenGraph image queries are kept seperate from Twitter
   // image queries. This is to prevent duplicates when sites include both.
   // If we find Twitter first, we'll return it and never look for Facebook.
