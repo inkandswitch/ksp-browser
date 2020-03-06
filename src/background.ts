@@ -14,6 +14,26 @@ const onContextMenuAction = async (itemData: chrome.contextMenus.OnClickData) =>
   }
 }
 
+chrome.browserAction.onClicked.addListener(function() {
+  chrome.windows.getCurrent(function(win) {
+    var width = 440
+    var height = 220
+
+    var left = screen.width / 2 - width / 2 + (win.left || 0)
+    var top = screen.height / 2 - height / 2 + (win.top || 0)
+
+    chrome.windows.create({
+      url: 'prompt.html',
+      width: width,
+      height: height,
+      type: 'popup',
+      focused: true,
+      top: Math.round(top),
+      left: Math.round(left),
+    })
+  })
+})
+
 const onBrowserAction = async (tab: chrome.tabs.Tab) => {
   startActionFeedback()
   try {

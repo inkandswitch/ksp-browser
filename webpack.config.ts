@@ -14,6 +14,7 @@ const config: webpack.Configuration = {
   entry: {
     background: path.join(__dirname, srcDir + 'background.ts'),
     content: path.join(__dirname, srcDir + 'content.ts'),
+    prompt: path.join(__dirname, srcDir + 'prompt.ts'),
   },
   output: {
     path: path.join(__dirname, 'dist/'),
