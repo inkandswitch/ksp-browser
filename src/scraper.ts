@@ -33,26 +33,6 @@ export type HostMessage =
   | { type: 'scraped'; scraped: ScrapeData }
   | { type: 'archived'; archived: ArchiveData }
 
-const scape = () => {
-  if (document.querySelector('embed[type="application/pdf"]')) {
-    const msg = {
-      src: window.location.href,
-      dataUrl: `data:text/plain,${window.location.href}`,
-      capturedAt: new Date().toISOString(),
-    }
-    chrome.runtime.sendMessage(msg)
-  } else {
-    freezeDry(document, { addMetadata: true }).then((html: string) => {
-      const msg = {
-        src: window.location.href,
-        dataUrl: `data:text/html,${encodeURIComponent(html)}`,
-        capturedAt: new Date().toISOString(),
-      }
-      chrome.runtime.sendMessage(msg)
-    })
-  }
-}
-
 export const clip = (document: Document): Promise<ScrapeData> => {
   const selection = RangeSelection.get(document)
   return selection ? clipSelection(selection) : clipSummary(document)
