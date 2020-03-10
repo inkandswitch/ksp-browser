@@ -1,0 +1,68 @@
+header {
+  background-color: rgba(255, 255, 255, 0.7);
+  animation: fadein 500ms;
+}
+
+article {
+  max-height: 90vh;
+}
+
+@keyframes fadein {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+#card[data-status='pending'] {
+  opacity: 0.5;
+}
+
+#archive {
+}
+
+#close-button {
+  cursor: pointer;
+}
+
+#card .image {
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+#card .icon {
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  /* position: 'absolute',
+    right: '4px',
+    top: '4px', */
+  /* width: '16px';
+  height: '16px'; */
+}
+
+progress::-webkit-progress-inner-element,
+progress::-webkit-progress-bar {
+  background: inherit;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+progress::-webkit-progress-value {
+  background-color: inherit;
+  background-image: inherit;
+}
+
+progress {
+  -webkit-appearance: none;
+  appearance: none;
+  box-shadow: none;
+  overflow: hidden;
+  background-color: transparent;
+  background-image: linear-gradient(45deg, white calc(100% - 8px), transparent calc(100% - 8px));
+  background-size: 0;
+  width: 100%;
+}

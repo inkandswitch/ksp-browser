@@ -1,3 +1,5 @@
+import { ExtensionInbox, ScriptInbox, ArchiveResponse } from './mailbox'
+
 const onContextMenuAction = async (itemData: chrome.contextMenus.OnClickData) => {
   if (itemData.selectionText) {
     const clip = await clipSelection()
@@ -13,6 +15,8 @@ const onContextMenuAction = async (itemData: chrome.contextMenus.OnClickData) =>
 }
 
 const onBrowserAction = () => {
+  return executeScript({ file: 'content.js' })
+
   chrome.windows.getCurrent(function(win) {
     var width = 440
     var height = 220
@@ -30,8 +34,6 @@ const onBrowserAction = () => {
       left: Math.round(left),
     })
   })
-
-  executeScript({ file: 'content.js' })
 }
 
 const clipSelection = async () => {
@@ -96,5 +98,40 @@ const executeFunction = <a>(fn: () => a, details: chrome.tabs.InjectDetails = {}
   })
 }
 
+const onArchived = async (message: ArchiveResponse) => {
+  const response = await fetch(message.archive.archiveURL)
+  const blob = await response.blob()
+  const archiveURL = URL.createObjectURL(blob)
+
+  chrome.tabs.create({ url: archiveURL, active: false })
+}
+
+const onClose = (tab: chrome.tabs.Tab) => {
+  const message: ScriptInbox = { type: 'CloseRequest' }
+  chrome.tabs.sendMessage(tab.id!, message)
+}
+
+const onContentMessage = (
+  request: ExtensionInbox,
+  sender: chrome.runtime.MessageSender,
+  respond: (dat: any) => void
+): void => {
+  switch (request.type) {
+    case 'CloseRequest':
+    case 'ArchiveRequest':
+    case 'ExcerptRequest': {
+      const message: ScriptInbox = request
+      return chrome.tabs.sendMessage(sender.tab!.id!, message)
+    }
+    case 'ExcerptResponse': {
+      return undefined
+    }
+    case 'ArchiveResponse': {
+      return void onArchived(request)
+    }
+  }
+}
+
 chrome.browserAction.onClicked.addListener(onBrowserAction)
 chrome.contextMenus.onClicked.addListener(onContextMenuAction)
+chrome.runtime.onMessage.addListener(onContentMessage)
