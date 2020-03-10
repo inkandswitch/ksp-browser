@@ -93,15 +93,20 @@ export const clipSelection = async (selection: RangeSelection): Promise<ScrapeDa
   const title = scrapeTitle(document.documentElement, '')
   const name = scrapeSiteName(document.documentElement, '')
   const [firstRange] = selection.ranges()
+  const { commonAncestorContainer } = firstRange
 
   // First try scraping images from content, then fall back to scraping from the document.
   // We just pick the first one.
-  let imgs = [
-    ...findHeroImgUrls(
-      <Element>firstRange.commonAncestorContainer,
-      (image) => selection.selection.containsNode(image) && isImgSizeAtLeast(image, 200, 100)
-    ),
-  ]
+  let imgs =
+    commonAncestorContainer.nodeType !== Node.ELEMENT_NODE
+      ? []
+      : [
+          ...findHeroImgUrls(
+            <HTMLElement>commonAncestorContainer,
+            (image) => selection.selection.containsNode(image) && isImgSizeAtLeast(image, 200, 100)
+          ),
+        ]
+
   const images = concat([imgs, scrapeHeroImgUrls(document.documentElement)])
   const hero = [...take(1, images)]
   const description = selection.toText()
