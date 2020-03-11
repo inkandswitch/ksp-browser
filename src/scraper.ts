@@ -2,6 +2,7 @@ import { resolveSelector, getRangeSelector, Selector } from './web-annotation'
 import { RangeSelection } from './selection'
 
 // Selection that isn't empty
+export { Selector }
 
 export type ScrapeData = {
   url: string

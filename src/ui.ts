@@ -1,5 +1,5 @@
 import { html } from './html'
-import { ScrapeData } from './scraper'
+import { ScrapeData, Selector } from './scraper'
 import { Program, Context } from './program'
 import { UIInbox, ExtensionInbox, ArchiveData, ScriptInbox } from './mailbox'
 import * as Progress from './progress'
@@ -41,6 +41,13 @@ const render = (context: Context<Model>) => {
   const closeButton = <HTMLElement>context.target.querySelector('#close-button')!
   const form = <HTMLFormElement>context.target.querySelector('form')
   const frame = <HTMLIFrameElement>context.target.querySelector('#archive')!
+  const time = <HTMLTimeElement>context.target.querySelector('time')
+  const comment = <HTMLTextAreaElement>form.querySelector('#comment')
+
+  if (!comment.dataset.focus) {
+    comment.dataset.focus = 'true'
+    comment.focus()
+  }
 
   if (!closeButton.dataset.onclick) {
     closeButton.dataset.onclick = 'true'
@@ -57,8 +64,64 @@ const render = (context: Context<Model>) => {
     form.addEventListener('submit', context)
   }
 
+  if (!context.target.dataset.onkeyup) {
+    context.target.dataset.onkeyup = 'true'
+    context.target.ownerDocument!.addEventListener('keyup', context)
+  }
+
+  if (time.dateTime == null || time.dateTime === '') {
+    const date = new Date()
+    time.dateTime = date.toUTCString()
+    time.textContent = formatDate(date)
+  }
+
+  renderStatus(context)
   renderExcerpt(context)
   renderArchive(context)
+}
+
+const months = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+]
+const formatDate = (date: Date) =>
+  `${date.getDate()} ${months[date.getMonth()]}, ${date.getFullYear()}`
+
+const renderStatus = (context: Context<Model>) => {
+  const state = context.state.save
+  const view = <HTMLButtonElement>context.target.querySelector('#submit-button')
+  switch (state.status) {
+    case 'idle': {
+      view.dataset.status = 'idle'
+      view.textContent = 'Excerpt'
+      return null
+    }
+    case 'waiting': {
+      view.dataset.status = 'busy'
+      view.textContent = 'Archiving...'
+      return null
+    }
+    case 'uploading': {
+      view.dataset.status = 'busy'
+      view.textContent = 'Saving...'
+      return null
+    }
+    case 'done': {
+      view.dataset.status = 'done'
+      view.textContent = `Copied URL`
+      return null
+    }
+  }
 }
 
 const renderExcerpt = (context: Context<Model>) => {
@@ -67,17 +130,17 @@ const renderExcerpt = (context: Context<Model>) => {
   switch (state.status) {
     case 'idle':
     case 'pending': {
-      return renderCard(context.target, state.status, '', '', '', '', '')
+      return renderCard(context.target, state.status, '', '', '', '', '', '')
     }
     case 'ready': {
       const data = state.excerpt
-      const title = data.name == '' ? data.title : data.name
       return renderCard(
         context.target,
         'ready',
         data.hero[0],
         data.url,
-        title,
+        data.name,
+        data.title,
         data.description,
         data.icon || ''
       )
@@ -90,12 +153,16 @@ const renderCard = (
   status: string,
   image: string,
   url: string,
+  name: string,
   title: string,
   body: string,
   icon: string
 ) => {
   const view = <HTMLElement>target.querySelector('#card')!
   view.dataset.status = status
+
+  const nameView = <HTMLHeadElement>target.querySelector('#name')
+  nameView.textContent = name === '' ? title : name
 
   const imageView = <HTMLImageElement>view.querySelector('.image')
   imageView.style.backgroundImage = `url(${image})`
@@ -122,6 +189,7 @@ const renderArchive = (context: Context<Model>) => {
     case 'idle': {
       view.dataset.status = 'init'
       view.style.height = '0'
+      view.style.minHeight = '0'
       view.removeAttribute('src')
       Progress.renderIdle(progress)
       return
@@ -129,24 +197,28 @@ const renderArchive = (context: Context<Model>) => {
     case 'pending': {
       view.dataset.status = 'pending'
       view.style.height = '0'
+      view.style.minHeight = '0'
       Progress.renderLoadStart(progress, performance.now())
       return
     }
     case 'ready': {
       view.dataset.status = 'ready'
       view.style.height = '0'
+      view.style.minHeight = '0'
       Progress.renderConnected(progress, performance.now())
       return
     }
     case 'loading': {
       view.src = state.archive.archiveURL
       view.style.height = '0'
+      view.style.minHeight = '0'
       view.dataset.status = 'loading'
       return
     }
     case 'loaded': {
       view.dataset.status = 'loaded'
       view.style.height = `${state.scrollHeight}px`
+      view.style.minHeight = `100vh`
       Progress.renderLoadEnded(progress, performance.now())
       return
     }
@@ -156,20 +228,53 @@ const renderArchive = (context: Context<Model>) => {
 const onEvent = (event: Event) => {
   const target = <HTMLElement>event.currentTarget
   if (!target) return null
-  switch (target.id) {
-    case 'close-button': {
-      return { type: 'CloseRequest' }
+  switch (event.type) {
+    case 'keyup': {
+      const { key, isComposing, shiftKey } = <KeyboardEvent>event
+      if (isComposing) return null
+      switch (key) {
+        case 'Escape': {
+          return { type: 'CloseRequest' }
+        }
+        case 'Enter': {
+          if (shiftKey) {
+            return null
+          } else {
+            const text = <HTMLTextAreaElement>target.querySelector('#comment')
+            return { type: 'SaveRequest', comment: text.value.trim() }
+          }
+        }
+        default: {
+          return null
+        }
+      }
     }
-    case 'archive': {
-      const frame = <HTMLIFrameElement>target
-      const { scrollHeight } = frame.contentWindow!.document.body
-      return { type: 'ArchiveLoaded', scrollHeight }
+    case 'click': {
+      switch (target.id) {
+        case 'close-button': {
+          return { type: 'CloseRequest' }
+        }
+        default: {
+          return null
+        }
+      }
     }
-    case 'form': {
+    case 'submit': {
       event.preventDefault()
-      const form = <HTMLFormElement>target
       const text = <HTMLTextAreaElement>target.querySelector('#comment')
-      return { type: 'SaveRequest', comment: text.value }
+      return { type: 'SaveRequest', comment: text.value.trim() }
+    }
+    case 'load': {
+      switch (target.id) {
+        case 'archive': {
+          const frame = <HTMLIFrameElement>target
+          const { scrollHeight } = frame.contentWindow!.document.body
+          return { type: 'ArchiveLoaded', scrollHeight }
+        }
+        default: {
+          return null
+        }
+      }
     }
     default: {
       return null
@@ -295,7 +400,7 @@ const upload = async (
     data.append('file', new File([blob], name, { type: blob.type }), `base/${name}`)
   }
 
-  const content = {
+  const content: Data = {
     image: imageURL ? `image.${extension(imageURL)}` : undefined,
     icon: iconURL ? `icon.${extension(iconURL)}` : undefined,
     url: excerpt.url,
@@ -303,6 +408,7 @@ const upload = async (
     title: excerpt.title,
     name: excerpt.name,
     selector: excerpt.selector,
+    time: new Date(archive.capturedAt),
     comment,
   }
 
@@ -356,8 +462,9 @@ type Data = {
   body: string
   url: string
   icon: string | undefined
-  time: string
+  time: Date
   comment: string
+  selector: null | Selector[]
 }
 const excerptHTML = (data: Data, scrollHeight: number) => {
   return `<!DOCTYPE html>
@@ -368,7 +475,6 @@ const excerptHTML = (data: Data, scrollHeight: number) => {
     <meta charset="utf-8" />
     <link rel="stylesheet" href="tachyons.min.css" />
     <link rel="stylesheet" href="ui.css" />
-    <script src="ui.js"></script>
   </head>
   <body class="w-100 flex flex-column sans-serif">
     <header
@@ -383,12 +489,12 @@ const excerptHTML = (data: Data, scrollHeight: number) => {
             <div class="overflow-hidden pa2 ph2-ns">
               <div class="pa1 dt w-100 mt1">
                 <div class="dtc">
-                  <h1 class="title f5 f4-ns mv0">${data.name == '' ? data.title : data.name}</h1>
+                  <h1 class="title f5 f4-ns mv0">${data.title}</h1>
                 </div>
               </div>
               <p class="body h4 pa1 f6 lh-copy measure-wide mt2 mid-gray">${data.body}</p>
             </div>
-            <div class="pa2 h2 bg-near-white flex justify-between">
+            <div class="pa2 f7 h2 bg-near-white flex justify-between">
               <a class="url link underline-hover gray mw6 truncate" href="${data.url}">${
     data.url === '' ? '' : new URL(data.url).href.split('://').pop()!
   }</a>
@@ -399,40 +505,38 @@ const excerptHTML = (data: Data, scrollHeight: number) => {
           </article>
     <form id="form" class="fl pr4 mb4 black-80 w-100 w-40-l w-70-m">
         <div class="">
-          <time class="f6 mb2 dib ttu tracked"><small>${data.time}</small></time>
-          <h3 class="f2 f1-m f-headline-l measure-narrow lh-title mv0">
-            <span class="bg-black-90 lh-copy white pa1 tracked-tight">
-              Web XCRPT
-            </span>
+          <time class="f7 mv2 dib ttu tracked" datetime="${data.time.toUTCString()}">${formatDate(
+    data.time
+  )}</time>
+          <h3 class="f2 f1-m f-headline-m measure-narrow lh-title mv0">
+            <span class="bg-black-90 lh-copy white pa1 tracked-tight">${
+              data.name === '' ? data.title : data.name
+            }</span>
           </h3>
         </div>
         <div>
-          <label for="comment" class="f5 b db mb2"
-            >Comments <span class="normal black-60">(optional)</span></label
-          >
           <div
             id="comment"
             name="comment"
-            class="outline-0 db f5 border-box hover-black h4 w-100 ba b--black pa2 br2 mv4 bg-transparent"
+            class="outline-0 db f5 border-box hover-black h4 w-100 b--black pa3 bw1 bl br-0 bt-0 bb-0 mv4 bg-transparent"
             aria-describedby="comment-desc"
-            autofocus=""
           >${data.comment}</div>
         </div>
-        <input
-          class="b ph3 pv2 input-reset ba b--black pointer f4 no-underline near-white bg-animate bg-near-black hover-bg-transparent hover-near-black inline-flex items-center tc br2 pa2"
-          type="submit"
-          value="Excerpt"
-        />
+        <button
+          id="-scroll-button"
+          class="b ph3 pv2 input-reset ba b--black pointer f4 no-underline near-white bg-animate bg-near-black hover-bg-transparent hover-near-black inline-flex items-center tc br2 pa2 outline-0">
+          Scroll
+        </button>
       </form>
       <progress class="absolute bottom-0 left-0 w-100 ma0 pa0" min="0" max="100" value="0" />
     </header>
     <iframe
       id="archive"
-      data-status="idle"
-      sandbox="allow-same-origin allow-top-navigation allow-scripts"
+      sandbox="allow-same-origin"
       class="w-100 bn"
       seamless=""
-      style="height: ${scrollHeight}px;"
+      scrolling="no"
+      style="height: ${scrollHeight}px; min-height: 100vh;"
       src="./archive.html"
     ></iframe>
   </body>

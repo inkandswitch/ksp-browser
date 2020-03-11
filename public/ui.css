@@ -16,6 +16,15 @@ article {
   }
 }
 
+@keyframes fadeout {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 #card[data-status='pending'] {
   opacity: 0.5;
 }
@@ -44,6 +53,11 @@ article {
   height: '16px'; */
 }
 
+::placeholder {
+  color: inherit;
+  opacity: 0.8;
+}
+
 progress::-webkit-progress-inner-element,
 progress::-webkit-progress-bar {
   background: inherit;
@@ -65,4 +79,11 @@ progress {
   background-image: linear-gradient(45deg, white calc(100% - 8px), transparent calc(100% - 8px));
   background-size: 0;
   width: 100%;
+}
+
+#submit-button[data-status='busy'] {
+}
+
+#submit-button[data-status='done'] {
+  animation: fadeout 500ms ease-out 2000ms forwards;
 }

@@ -120,6 +120,7 @@ const renderActive = (document: Document) => {
       'dispaly:block!important;border:none!important;position:fixed!important;height:100%!important;width:100%!important;top:0!important;right:0!important;bottom:0!important;left:0!important;margin:0!important;clip:auto!important;opacity:1!important;z-index:9223472036854775807'
     )
     document.body.appendChild(view)
+    view.focus()
   }
 }
 
