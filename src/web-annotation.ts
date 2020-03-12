@@ -318,7 +318,7 @@ const getAnchorByOffset = (node: Element, offset: number): Anchor | null =>
   reduceTextNodes(
     (state: { position: number; anchor: Anchor | null }, text) => {
       const position = state.position + text.length
-      if (position > offset) {
+      if (position >= offset) {
         state.anchor = { node: text, offset: offset - state.position }
         return new Break(state)
       } else {
