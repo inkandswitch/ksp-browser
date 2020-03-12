@@ -7,6 +7,11 @@
     <link rel="stylesheet" href="tachyons.min.css" />
     <link rel="stylesheet" href="ui.css" />
     <script src="ui.js"></script>
+    <script async defer src="xcrpt.js"></script>
+    <script
+      id="web-annotation"
+      type='application/ld+json;profile="http://www.w3.org/ns/anno.jsonld"'
+    ></script>
   </head>
   <body class="w-100 flex flex-column sans-serif">
     <header
@@ -68,6 +73,14 @@
         >
           Excerpt
         </button>
+        <a
+          id="unfurl-button"
+          href="#archive"
+          hidden
+          class="b ph3 pv2 input-reset ba b--black pointer f4 no-underline near-white bg-animate bg-near-black hover-bg-transparent hover-near-black items-center tc br2 pa2 outline-0"
+        >
+          Unfurl
+        </a>
       </form>
       <progress class="absolute bottom-0 left-0 w-100 ma0 pa0" min="0" max="100" value="0" />
     </header>

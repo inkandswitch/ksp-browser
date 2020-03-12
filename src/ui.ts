@@ -1,5 +1,7 @@
 import { html } from './html'
 import { ScrapeData, Selector } from './scraper'
+import { annotation } from './annotation'
+import { openGraphMarkup, twitterCardMarkup } from './embed'
 import { Program, Context } from './program'
 import { UIInbox, ExtensionInbox, ArchiveData, ScriptInbox } from './mailbox'
 import * as Progress from './progress'
@@ -130,11 +132,13 @@ const renderExcerpt = (context: Context<Model>) => {
   switch (state.status) {
     case 'idle':
     case 'pending': {
-      return renderCard(context.target, state.status, '', '', '', '', '', '')
+      renderCard(context.target, state.status, '', '', '', '', '', '')
+      return null
     }
     case 'ready': {
       const data = state.excerpt
-      return renderCard(
+      renderAnnotation(context.target, state.excerpt)
+      renderCard(
         context.target,
         'ready',
         data.hero[0],
@@ -144,6 +148,7 @@ const renderExcerpt = (context: Context<Model>) => {
         data.description,
         data.icon || ''
       )
+      return null
     }
   }
 }
@@ -179,6 +184,13 @@ const renderCard = (
 
   const iconView = <HTMLImageElement>view.querySelector('.icon')
   iconView.style.backgroundImage = `url(${icon})`
+}
+
+const renderAnnotation = (target: HTMLElement, data: ScrapeData) => {
+  const annotationView = <HTMLScriptElement>target.ownerDocument!.querySelector('#web-annotation')!
+  annotationView.textContent = JSON.stringify(
+    annotation(data.url, new Date(), '', data.selector || [], './archive.html')
+  )
 }
 
 const renderArchive = (context: Context<Model>) => {
@@ -400,12 +412,14 @@ const upload = async (
     data.append('file', new File([blob], name, { type: blob.type }), `base/${name}`)
   }
 
-  const content: Data = {
+  const content = {
+    imageURL,
     image: imageURL ? `image.${extension(imageURL)}` : undefined,
     icon: iconURL ? `icon.${extension(iconURL)}` : undefined,
     url: excerpt.url,
     body: excerpt.description,
-    title: excerpt.title,
+    description: excerpt.description,
+    title: comment === '' ? excerpt.title : comment,
     name: excerpt.name,
     selector: excerpt.selector,
     time: new Date(archive.capturedAt),
@@ -427,6 +441,9 @@ const upload = async (
 
   const uistyle = await fetch('ui.css')
   data.append('file', new File([await uistyle.blob()], 'ui.css'), 'base/ui.css')
+
+  const script = await fetch('xcrpt.js')
+  data.append('file', new File([await script.blob()], 'xcrpt.js'), 'base/xcrpt.js')
 
   data.append(
     'file',
@@ -458,8 +475,10 @@ const upload = async (
 type Data = {
   title: string
   name: string
+  imageURL: string | undefined
   image: string | undefined
   body: string
+  description: string
   url: string
   icon: string | undefined
   time: Date
@@ -475,7 +494,17 @@ const excerptHTML = (data: Data, scrollHeight: number) => {
     <meta charset="utf-8" />
     <link rel="stylesheet" href="tachyons.min.css" />
     <link rel="stylesheet" href="ui.css" />
-  </head>
+    <script src="xcrpt.js"></script>
+    <script id="web-annotation" type='application/ld+json;profile="http://www.w3.org/ns/anno.jsonld"'>
+    ${JSON.stringify(
+      annotation(data.url, data.time, data.comment, data.selector || [], './archive.html'),
+      null,
+      2
+    )}
+    </script>
+    ${openGraphMarkup({ ...data, image: data.imageURL })}
+    ${twitterCardMarkup({ ...data, image: data.imageURL })}
+    </head>
   <body class="w-100 flex flex-column sans-serif">
     <header
       class="relative bg-gold sans-serif min-vh-100 overflow-hidden bg-white flex flex-wrap items-center justify-around">
@@ -503,7 +532,7 @@ const excerptHTML = (data: Data, scrollHeight: number) => {
               });"></a>
             </div>
           </article>
-    <form id="form" class="fl pr4 mb4 black-80 w-100 w-40-l w-70-m">
+    <div id="form" class="fl pr4 mb4 black-80 w-100 w-40-l w-70-m">
         <div class="">
           <time class="f7 mv2 dib ttu tracked" datetime="${data.time.toUTCString()}">${formatDate(
     data.time
@@ -522,12 +551,13 @@ const excerptHTML = (data: Data, scrollHeight: number) => {
             aria-describedby="comment-desc"
           >${data.comment}</div>
         </div>
-        <button
-          id="-scroll-button"
+        <a
+          id="unfurl-button"
+          href="#archive"
           class="b ph3 pv2 input-reset ba b--black pointer f4 no-underline near-white bg-animate bg-near-black hover-bg-transparent hover-near-black inline-flex items-center tc br2 pa2 outline-0">
-          Scroll
-        </button>
-      </form>
+          Unfurl
+        </a>
+      </div>
       <progress class="absolute bottom-0 left-0 w-100 ma0 pa0" min="0" max="100" value="0" />
     </header>
     <iframe
@@ -548,6 +578,14 @@ const send = async (port: chrome.runtime.Port, message: ScriptInbox) => {
   port.postMessage(message)
   return null
 }
+
+const toDataURL = (blob: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(blob)
+    reader.onload = () => resolve(<string>reader.result)
+    reader.onerror = reject
+  })
 
 const getTab = (): Promise<null | chrome.tabs.Tab> =>
   new Promise((resolve) => chrome.tabs.getCurrent(resolve))
@@ -572,4 +610,4 @@ const onload = async () => {
 
   port.onMessage.addListener((message: UIInbox) => program.send(message))
 }
-self.onload = onload
+onload()
