@@ -3,37 +3,23 @@ import { ExtensionInbox, ScriptInbox, ArchiveResponse } from './mailbox'
 const onContextMenuAction = async (itemData: chrome.contextMenus.OnClickData) => {
   if (itemData.selectionText) {
     const clip = await clipSelection()
-    console.log(clip)
     alert('no action taken')
   }
 
   if (itemData.mediaType === 'image' && itemData.srcUrl) {
     const clip = await clipImage(itemData.srcUrl)
-    console.log(clip)
     alert('no action taken')
   }
 }
 
-const onBrowserAction = () => {
-  return executeScript({ file: 'content.js' })
-
-  chrome.windows.getCurrent(function(win) {
-    var width = 440
-    var height = 220
-
-    var left = screen.width / 2 - width / 2 + (win.left || 0)
-    var top = screen.height / 2 - height / 2 + (win.top || 0)
-
-    chrome.windows.create({
-      url: 'prompt.html',
-      width: width,
-      height: height,
-      type: 'popup',
-      focused: true,
-      top: Math.round(top),
-      left: Math.round(left),
-    })
-  })
+const onBrowserAction = async (tab: chrome.tabs.Tab) => {
+  try {
+    await request(tab.id!, { type: 'Activate' })
+  } catch (error) {
+    if (error instanceof NoReceiverError) {
+      await executeScript({ file: 'content.js' })
+    }
+  }
 }
 
 const clipSelection = async () => {
@@ -90,6 +76,14 @@ const executeScript = (details: chrome.tabs.InjectDetails): Promise<any> =>
     })
   })
 
+class NoReceiverError extends Error {
+  error: chrome.runtime.LastError
+  constructor(error: chrome.runtime.LastError) {
+    super(error.message)
+    this.error = error
+  }
+}
+
 const executeFunction = <a>(fn: () => a, details: chrome.tabs.InjectDetails = {}): Promise<a> => {
   delete details.file
   return executeScript({
@@ -98,40 +92,24 @@ const executeFunction = <a>(fn: () => a, details: chrome.tabs.InjectDetails = {}
   })
 }
 
-const onArchived = async (message: ArchiveResponse) => {
-  const response = await fetch(message.archive.archiveURL)
-  const blob = await response.blob()
-  const archiveURL = URL.createObjectURL(blob)
-
-  chrome.tabs.create({ url: archiveURL, active: false })
-}
-
-const onClose = (tab: chrome.tabs.Tab) => {
-  const message: ScriptInbox = { type: 'CloseRequest' }
-  chrome.tabs.sendMessage(tab.id!, message)
-}
-
-const onContentMessage = (
-  request: ExtensionInbox,
-  sender: chrome.runtime.MessageSender,
-  respond: (dat: any) => void
-): void => {
-  switch (request.type) {
-    case 'CloseRequest':
-    case 'ArchiveRequest':
-    case 'ExcerptRequest': {
-      const message: ScriptInbox = request
-      return chrome.tabs.sendMessage(sender.tab!.id!, message)
-    }
-    case 'ExcerptResponse': {
-      return undefined
-    }
-    case 'ArchiveResponse': {
-      return void onArchived(request)
-    }
-  }
-}
+const request = <a, b>(tabId: number, message: a): Promise<b> =>
+  new Promise((resolve, reject) => {
+    chrome.tabs.sendMessage(tabId, message, (response) => {
+      if (response) {
+        resolve(response)
+      } else if (chrome.runtime.lastError) {
+        const error = chrome.runtime.lastError
+        if (!error) {
+          resolve(response)
+        }
+        if (error.message && error.message.includes('Receiving end does not exist')) {
+          reject(new NoReceiverError(error))
+        } else {
+          reject(error)
+        }
+      }
+    })
+  })
 
 chrome.browserAction.onClicked.addListener(onBrowserAction)
 chrome.contextMenus.onClicked.addListener(onContextMenuAction)
-chrome.runtime.onMessage.addListener(onContentMessage)

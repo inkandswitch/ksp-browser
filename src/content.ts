@@ -8,6 +8,8 @@ import {
   UIInbox,
   ArchiveRequest,
   ExcerptRequest,
+  Activate,
+  Deactivate,
   CloseRequest,
 } from './mailbox'
 import { Program, Context } from './program'
@@ -31,8 +33,9 @@ const close = () => {
 type Inactive = { isActive: false }
 type Active = { isActive: true; source: Document }
 type Model = Inactive | Active
-type Message = { type: 'Activate' } | Request | Response
+type Message = Activate | Deactivate | Request | Response
 type Address = { tabId: number; frameId: number }
+
 type Request = {
   type: 'Request'
   request: ScriptInbox
@@ -53,6 +56,9 @@ const update = (message: Message, state: Model): [Model, null | Promise<null | M
   switch (message.type) {
     case 'Activate': {
       return [activate(state), null]
+    }
+    case 'Deactivate': {
+      return deactivate(state)
     }
     case 'Response': {
       return [state, respond(message)]
@@ -143,16 +149,36 @@ const onload = async () => {
     document.body
   )
 
-  chrome.runtime.onConnect.addListener((port: chrome.runtime.Port) => {
+  const onunload = () => {
+    window.removeEventListener('message', onWindowMessage)
+    chrome.runtime.onMessage.removeListener(onExtensionMessage)
+    chrome.runtime.onConnect.removeListener(onConnect)
+    program.send({ type: 'Deactivate' })
+  }
+
+  const onWindowMessage = (event: MessageEvent) => {
+    const frame = <null | HTMLIFrameElement>document.querySelector('#xcrpt')
+    if (frame && frame.src.startsWith(event.origin) && event.data.type === 'unload') {
+      onunload()
+    }
+  }
+  const onExtensionMessage = (message: Activate) => program.send(message)
+  const onConnect = (port: chrome.runtime.Port) => {
     port.onMessage.addListener((request: ScriptInbox, port: chrome.runtime.Port) => {
       const message: Request = {
         type: 'Request',
         request,
         port,
       }
+
+      console.log('Content Inbox', request)
+
       program.send(message)
     })
-  })
+  }
+  window.addEventListener('message', onWindowMessage)
+  chrome.runtime.onMessage.addListener(onExtensionMessage)
+  chrome.runtime.onConnect.addListener(onConnect)
 
   program.send({ type: 'Activate' })
 }

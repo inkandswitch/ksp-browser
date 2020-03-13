@@ -4,6 +4,7 @@ import { annotation } from './annotation'
 import { openGraphMarkup, twitterCardMarkup } from './embed'
 import { Program, Context } from './program'
 import { UIInbox, ExtensionInbox, ArchiveData, ScriptInbox } from './mailbox'
+import { BlobReader } from './blob-reader'
 import * as Progress from './progress'
 
 type ExcerptState =
@@ -115,7 +116,7 @@ const renderStatus = (context: Context<Model>) => {
     }
     case 'uploading': {
       view.dataset.status = 'busy'
-      view.textContent = 'Saving...'
+      view.textContent = 'Publishing...'
       return null
     }
     case 'done': {
@@ -309,7 +310,6 @@ const init = (port: chrome.runtime.Port): [Model, null | Promise<Message | null>
 const update = (message: Message, state: Model): [Model, null | Promise<Message | null>] => {
   switch (message.type) {
     case 'ArchiveResponse': {
-      console.log(state)
       return [
         { ...state, archive: { status: 'ready', archive: message.archive } },
         decodeArchive(message.archive),
@@ -329,28 +329,32 @@ const update = (message: Message, state: Model): [Model, null | Promise<Message 
       ]
     }
     case 'CloseRequest': {
-      return [state, send(state.port, message)]
+      return [state, close(state)]
     }
     case 'ArchiveLoaded': {
-      const next: Model = {
-        ...state,
-        archive: {
-          status: 'loaded',
-          // @ts-ignore I we can't have end without start
-          archive: <ArchiveData>state.archive.archive,
-          scrollHeight: message.scrollHeight,
-        },
+      const archive: ArchiveState = {
+        status: 'loaded',
+        // @ts-ignore I we can't have end without start
+        archive: <ArchiveData>state.archive.archive,
+        scrollHeight: message.scrollHeight,
       }
 
-      return [next, save(next)]
+      if (state.save.status === 'waiting') {
+        const next: Model = { ...state, archive, save: { ...state.save, status: 'uploading' } }
+        return [next, save(next)]
+      } else {
+        const next: Model = { ...state, archive }
+        return [next, null]
+      }
     }
     case 'SaveRequest': {
+      const status = state.archive.status === 'loaded' ? 'uploading' : 'waiting'
       const next: Model = {
         ...state,
-        save: { status: 'waiting', comment: message.comment },
+        save: { status, comment: message.comment },
       }
 
-      return [next, save(next)]
+      return [next, status === 'uploading' ? save(next) : null]
     }
     case 'SaveResponse': {
       return [
@@ -359,6 +363,17 @@ const update = (message: Message, state: Model): [Model, null | Promise<Message 
       ]
     }
   }
+}
+
+const close = async (state: Model): Promise<null> => {
+  try {
+    await send(state.port, { type: 'CloseRequest' })
+  } catch (error) {
+    // Add-on was unloaded and there is no other way to communicate with
+    // contents script.
+    window.parent.postMessage({ type: 'unload' }, '*')
+  }
+  return null
 }
 
 const decodeArchive = async (archive: ArchiveData): Promise<Message> => {
@@ -371,12 +386,11 @@ const decodeArchive = async (archive: ArchiveData): Promise<Message> => {
 
 const writeToClipboard = async (text: string): Promise<null> => {
   await navigator.clipboard.writeText(text)
-  console.log(text)
   return null
 }
 
 const save = async ({ archive, excerpt, save }: Model): Promise<null | Message> => {
-  if (archive.status === 'loaded' && excerpt.status === 'ready' && save.status === 'waiting') {
+  if (archive.status === 'loaded' && excerpt.status === 'ready' && save.status === 'uploading') {
     return upload(excerpt.excerpt, archive.archive, save.comment, archive.scrollHeight)
   }
   return null
@@ -494,6 +508,7 @@ const excerptHTML = (data: Data, scrollHeight: number) => {
     <meta charset="utf-8" />
     <link rel="stylesheet" href="tachyons.min.css" />
     <link rel="stylesheet" href="ui.css" />
+    ${data.icon ? `<link rel="icon" href="${data.icon}" />` : ``}
     <script src="xcrpt.js"></script>
     <script id="web-annotation" type='application/ld+json;profile="http://www.w3.org/ns/anno.jsonld"'>
     ${JSON.stringify(
@@ -578,14 +593,6 @@ const send = async (port: chrome.runtime.Port, message: ScriptInbox) => {
   port.postMessage(message)
   return null
 }
-
-const toDataURL = (blob: Blob): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.readAsDataURL(blob)
-    reader.onload = () => resolve(<string>reader.result)
-    reader.onerror = reject
-  })
 
 const getTab = (): Promise<null | chrome.tabs.Tab> =>
   new Promise((resolve) => chrome.tabs.getCurrent(resolve))

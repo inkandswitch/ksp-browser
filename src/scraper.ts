@@ -1,5 +1,6 @@
 import { resolveSelector, getRangeSelector, Selector } from './web-annotation'
 import { RangeSelection } from './selection'
+import { BlobReader } from './blob-reader'
 
 // Selection that isn't empty
 export { Selector }
@@ -435,19 +436,98 @@ const scrapeHeroImgUrls = (el: Document | Element | DocumentFragment) => {
   return all
 }
 
-const scrapeIcon = (el: HTMLElement): string | null => {
-  const candidates = query(
+enum IconRel {
+  icon = 'icon',
+  shortcutIcon = 'shortcut icon',
+  appleTouchIcon = 'apple-touch-icon',
+  appleTouchIconPrecomposed = 'apple-touch-icon-precomposed',
+  maskIcon = 'mask-icon',
+}
+
+type Size = [number, number]
+
+class Icon {
+  sourceElement: HTMLLinkElement
+  blobCache: null | Blob | Promise<Blob>
+  static decode(link: Element) {
+    if (link.tagName === 'LINK') {
+      return new Icon(<HTMLLinkElement>link)
+    } else {
+      return null
+    }
+  }
+  constructor(link: HTMLLinkElement) {
+    this.sourceElement = link
+    this.blobCache = null
+  }
+  get type(): string {
+    return this.sourceElement.type
+  }
+  get rel(): IconRel {
+    return <IconRel>this.sourceElement.rel
+  }
+  get href() {
+    return this.sourceElement.href
+  }
+  *sizes(): Iterable<Size> {
+    const {
+      sourceElement: { sizes },
+    } = this
+    let index = 0
+    while (index < sizes.length) {
+      const entry = sizes[index]
+      if (entry.toLowerCase() === 'any') {
+        yield [Infinity, Infinity]
+      } else {
+        const [width, height] = entry.split('x')
+        yield [parseInt(width), parseInt(height)]
+      }
+    }
+  }
+  async toBlob(): Promise<Blob> {
+    if (!this.blobCache) {
+      this.blobCache = fetchBlob(this.href, {
+        cache: 'force-cache',
+        redirect: 'follow',
+      })
+    }
+    return this.blobCache
+  }
+  async toBlobURL() {
+    const blob = await this.toBlob()
+    return URL.createObjectURL(blob)
+  }
+  async toDataURL(): Promise<string> {
+    const blob = await this.toBlob()
+    return await BlobReader.readAsDataURL(blob)
+  }
+}
+
+const fetchBlob = async (input: RequestInfo, init?: RequestInit | undefined): Promise<Blob> => {
+  const response = await fetch(input, init)
+  const blob = await response.blob()
+  return blob
+}
+
+const scrapeIcons = (el: HTMLElement): Iterable<Icon> =>
+  query(
     `
     link[rel="shortcut icon"],
     link[rel="apple-touch-icon"],
+    link[rel="apple-touch-icon-precomposed"]
     link[rel="mask-icon"],
     link[rel="icon"]
     `,
-    getHref,
+    Icon.decode,
     el
   )
-  return first(candidates, null)
-}
+
+const scrapeIcon = (el: HTMLElement): string | null =>
+  first(
+    map(({ href }) => href, scrapeIcons(el)),
+    null
+  )
+
 // If we have 4 or more images, we show 4 images in combination.
 // Otherwise, use the first featured image only.
 const isImgCombo = (imgUrls: string[]) => imgUrls.length > 3

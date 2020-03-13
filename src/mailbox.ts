@@ -2,6 +2,8 @@ import { ScrapeData } from './scraper'
 
 export type ArchiveData = { archiveURL: string; capturedAt: string }
 
+export type Deactivate = { type: 'Deactivate' }
+export type Activate = { type: 'Activate' }
 export type CloseRequest = { type: 'CloseRequest' }
 export type ExcerptRequest = { type: 'ExcerptRequest' }
 export type ExcerptResponse = { type: 'ExcerptResponse'; excerpt: ScrapeData }
