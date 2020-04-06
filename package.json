@@ -1,18 +1,16 @@
 {
-  "name": "eleanor",
+  "name": "cont-ext",
   "version": "1.0.0",
   "main": "index.js",
-  "repository": "https://github.com/pvh/eleanor",
-  "author": "Peter van Hardenberg <pvh@pvh.ca>",
+  "repository": "github.com/inkandswitch/cont-ext",
   "license": "MIT",
   "scripts": {
     "build": "webpack"
   },
   "dependencies": {
-    "freeze-dry": "^0.2.4"
+    "lit-html": "1.2.1"
   },
   "devDependencies": {
-    "@types/freeze-dry": "file:./@types/freeze-dry",
     "@types/chrome": "^0.0.89",
     "@types/copy-webpack-plugin": "^5.0.0",
     "@types/node": "^12.7.11",

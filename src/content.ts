@@ -1,19 +1,16 @@
-import freezeDry from 'freeze-dry'
-import { clip, ScrapeData } from './scraper'
 import {
   ExtensionInbox,
   ScriptInbox,
-  ArchiveResponse,
-  ExcerptResponse,
   UIInbox,
-  ArchiveRequest,
-  ExcerptRequest,
+  CloseRequest,
   Activate,
   Deactivate,
-  CloseRequest,
+  LookupResponse,
 } from './mailbox'
+import * as Protocol from './protocol'
 import { Program, Context } from './program'
-import { publicDecrypt } from 'crypto'
+import { html, render as renderHTML, nothing } from '../node_modules/lit-html/lit-html'
+import { stat } from 'fs'
 
 const onUIMessage = (message: MessageEvent) => {
   switch (message.type) {
@@ -31,9 +28,9 @@ const close = () => {
 }
 
 type Inactive = { isActive: false }
-type Active = { isActive: true; source: Document }
+type Active = { isActive: true; resource: Protocol.Resource }
 type Model = Inactive | Active
-type Message = Activate | Deactivate | Request | Response
+type Message = Activate | Deactivate | Request | Response | LookupResponse
 type Address = { tabId: number; frameId: number }
 
 type Request = {
@@ -44,18 +41,21 @@ type Request = {
 
 type Response = {
   type: 'Response'
-  response: ArchiveResponse | ExcerptResponse
+  response: 'TODO'
   port: chrome.runtime.Port
 }
 
-const init = (): [Model, null] => {
-  return [{ isActive: false }, null]
+const init = (): [Model, Promise<null | Message>] => {
+  return [{ isActive: false }, queryKnowledgeServer()]
 }
 
 const update = (message: Message, state: Model): [Model, null | Promise<null | Message>] => {
   switch (message.type) {
     case 'Activate': {
       return [activate(state), null]
+    }
+    case 'LookupResponse': {
+      return [setMetadata(state, message.response.data.lookup), null]
     }
     case 'Deactivate': {
       return deactivate(state)
@@ -69,18 +69,21 @@ const update = (message: Message, state: Model): [Model, null | Promise<null | M
   }
 }
 
+const setMetadata = (state: Model, resource: Protocol.Resource) => {
+  return { ...state, isActive: true, resource }
+}
+
+const queryKnowledgeServer = (): Promise<Message | null> => {
+  let url = new URL(window.location.href)
+  url.search = ''
+  url.hash = ''
+  return request({ type: 'LookupRequest', url: url.href })
+}
+
 const handleRequest = (message: Request, state: Model): [Model, null | Promise<null | Message>] => {
   switch (message.request.type) {
     case 'CloseRequest': {
       return deactivate(state)
-    }
-    case 'ArchiveRequest': {
-      let active = activate(state)
-      return [active, archive(active.source, message)]
-    }
-    case 'ExcerptRequest': {
-      let active = activate(state)
-      return [active, excerpt(document, message)]
     }
   }
 }
@@ -102,20 +105,76 @@ const activate = (state: Model) => {
   if (state.isActive) {
     return state
   } else {
-    const source = <Document>document.cloneNode(true)
-    return { ...state, isActive: true, source }
+    return state
   }
 }
 
-const render = (context: Context<Model>) => {
-  if (context.state.isActive) {
-    renderActive(document)
+const view = (context: Context<Model>) => {
+  const view = document.querySelector('cont-ext')
+  if (!view) {
+    const view = document.createElement('cont-ext')
+    let shadowRoot = view.attachShadow({ mode: 'open' })
+    renderHTML(render(context.state), shadowRoot)
+    document.documentElement.appendChild(view)
   } else {
-    renderInactive(document)
+    renderHTML(render(context.state), view.shadowRoot!)
   }
 }
 
-const renderActive = (document: Document) => {
+const getContext = (state: Model): null | Protocol.Resource => {
+  if (!state.isActive) {
+    return null
+  } else {
+    const { resource } = state
+    if (resource.backLinks.length > 0 || resource.tags.length > 0) {
+      return resource
+    } else {
+      return null
+    }
+  }
+}
+
+const render = (state: Model) => {
+  const context = getContext(state)
+  return context ? renderActive(context) : nothing
+}
+
+const renderActive = (resource: Protocol.Resource) =>
+  html`
+    <link rel="stylesheet" href="${chrome.extension.getURL('ui.css')}" />
+    <aside class="sans-serif">
+      ${renderBacklinks(resource.backLinks)}
+    </aside>
+  `
+
+const renderBacklinks = (backLinks: Protocol.Link[]) =>
+  backLinks.length === 0
+    ? nothing
+    : html`<h2 class="marked"><span>Backlinks</span></h2>
+        <ul>
+          ${backLinks.map(
+            (link) =>
+              html`<li class="backlink">
+                <a target="_blank" title="${link.title}" href="${link.referrer.url}">
+                  ${link.referrer.url.split('/').pop()}
+                </a>
+                →
+                <a target="_blank" href="${chrome.extension.getURL('ui.html')}#${link.name}">
+                  ${link.name}
+                </a>
+              </li>`
+          )}
+        </ul>`
+
+// const view = (context: Context<Model>) => {
+//   if (context.state.isActive) {
+//     viewActive(document)
+//   } else {
+//     viewInactive(document)
+//   }
+// }
+
+const viewActive = (document: Document) => {
   const view = document.querySelector('iframe#xcrpt')
   if (!view) {
     const view = document.createElement('iframe')
@@ -123,14 +182,14 @@ const renderActive = (document: Document) => {
     view.src = chrome.extension.getURL('ui.html')
     view.setAttribute(
       'style',
-      'dispaly:block!important;border:none!important;position:fixed!important;height:100%!important;width:100%!important;top:0!important;right:0!important;bottom:0!important;left:0!important;margin:0!important;clip:auto!important;opacity:1!important;z-index:9223472036854775807'
+      'dispaly:block!important;border:none!important;height:100vh!important;width:100%!important;clip:auto!important;'
     )
-    document.body.appendChild(view)
+    document.documentElement.appendChild(view)
     view.focus()
   }
 }
 
-const renderInactive = (document: Document) => {
+const viewInactive = (document: Document) => {
   const view = <HTMLIFrameElement>document.querySelector('iframe#xcrpt')
   if (view) {
     view.remove()
@@ -143,7 +202,7 @@ const onload = async () => {
       init,
       update,
       onEvent: () => null,
-      render,
+      render: view,
     },
     undefined,
     document.body
@@ -179,47 +238,6 @@ const onload = async () => {
   window.addEventListener('message', onWindowMessage)
   chrome.runtime.onMessage.addListener(onExtensionMessage)
   chrome.runtime.onConnect.addListener(onConnect)
-
-  program.send({ type: 'Activate' })
-}
-
-const archive = async (source: Document, request: Request): Promise<Response> => {
-  const content = await freezeDry(source, {
-    addMetadata: true,
-    fetchResource: async (
-      input: RequestInfo,
-      init?: RequestInit | undefined
-    ): Promise<{ blob: Blob; url: string }> => {
-      try {
-        const response = await fetch(input, init)
-        const blob = await response.blob()
-        const url =
-          response.url !== '' ? response.url : typeof input === 'string' ? input : input.url
-        return { url, blob }
-      } catch (error) {
-        console.error(error)
-        throw error
-      }
-    },
-  })
-  const blob = new Blob([content], { type: 'text/html' })
-  const archiveURL = URL.createObjectURL(blob)
-  // const archiveURL = `data:text/html;base64,${btoa(content)}`
-  const capturedAt = new Date().toISOString()
-  return {
-    type: 'Response',
-    port: request.port,
-    response: { type: 'ArchiveResponse', archive: { archiveURL, capturedAt } },
-  }
-}
-
-const excerpt = async (document: Document, request: Request): Promise<Response> => {
-  const excerpt = await clip(document)
-  return {
-    type: 'Response',
-    port: request.port,
-    response: { type: 'ExcerptResponse', excerpt },
-  }
 }
 
 const send = async (message: ExtensionInbox) => {
@@ -227,29 +245,53 @@ const send = async (message: ExtensionInbox) => {
   return null
 }
 
+const request = (message: ExtensionInbox): Promise<Message | null> =>
+  new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(message, (response) => {
+      if (response) {
+        resolve(response)
+      } else if (chrome.runtime.lastError) {
+        const error = chrome.runtime.lastError
+        if (!error) {
+          resolve(response)
+        } else {
+          reject(error)
+        }
+      }
+    })
+  })
+
 const respond = async ({ port, response }: Response) => {
   port.postMessage(response)
   return null
 }
 
-const scrape = () => {
-  if (document.querySelector('embed[type="application/pdf"]')) {
-    const msg = {
-      src: window.location.href,
-      dataUrl: `data:text/plain,${window.location.href}`,
-      capturedAt: new Date().toISOString(),
-    }
-    chrome.runtime.sendMessage(msg)
-  } else {
-    freezeDry(document, { addMetadata: true }).then((html: string) => {
-      const msg = {
-        src: window.location.href,
-        dataUrl: `data:text/html,${encodeURIComponent(html)}`,
-        capturedAt: new Date().toISOString(),
-      }
-      chrome.runtime.sendMessage(msg)
-    })
-  }
-}
+// class HTMLContextElement extends HTMLElement {
+//   view: any
+//   shadowRoot!: ShadowRoot
+//   static get observedAttributes(): string[] {
+//     return []
+//   }
+//   constructor() {
+//     super()
+//     this.view = nothing
+//   }
+//   connectedCallback() {
+//     this.attachShadow({ mode: 'open' })
+//     this.update()
+//   }
+//   update() {
+//     this.view = this.render()
+//     this.transact()
+//   }
+//   render() {
+//     return nothing
+//   }
+//   disconnectedCallback() {}
+//   attributeChangedCallback(name: string, before: string, after: string) {}
+//   transact() {
+//     render(this.view, this.shadowRoot, { eventContext: this })
+//   }
+// }
 
 onload()

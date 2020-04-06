@@ -1,6 +1,6 @@
 {
-  "name": "Xcrpt",
-  "description": "Create a shareable excerpt of the current page.",
+  "name": "context",
+  "description": "Add context to the web through the Knowledge Server Protocol (KSP).",
   "version": "0.1",
   "icons": { "128": "icon-128.png" },
   "permissions": ["activeTab", "contextMenus", "*://*/*"],
@@ -8,9 +8,16 @@
     "scripts": ["background.js"],
     "persistent": false
   },
-  "web_accessible_resources": ["ui.html"],
+  "content_scripts": [
+    {
+      "matches": ["*://*/*"],
+      "run_at": "document_idle",
+      "js": ["content.js"]
+    }
+  ],
+  "web_accessible_resources": ["ui.html", "ui.css", "back-link-alt-solid.svg"],
   "browser_action": {
-    "default_title": "Capture an excerpt"
+    "default_title": "Nothing"
   },
   "commands": {
     "_execute_browser_action": {

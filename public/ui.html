@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>xcrpt capture</title>
+    <title>Related documents</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="utf-8" />
     <link rel="stylesheet" href="tachyons.min.css" />
     <link rel="stylesheet" href="ui.css" />
     <script src="ui.js"></script>
-    <script async defer src="xcrpt.js"></script>
     <script
       id="web-annotation"
       type='application/ld+json;profile="http://www.w3.org/ns/anno.jsonld"'
@@ -21,75 +20,6 @@
         id="card"
         class="fl flex flex-column overflow-hidden mv3 br2 bn dark-gray bg-white b-none w-100 w-70-m w-40-l mw6 mh4"
       >
-        <img src="" class="image h5 db w-100 br2 br--top" alt="" />
-        <div class="overflow-hidden pa2 ph2-ns">
-          <div class="pa1 dt w-100 mt1">
-            <div class="dtc">
-              <h1 class="title f5 f4-ns mv0"></h1>
-            </div>
-          </div>
-          <p class="body h4 pa1 f6 lh-copy measure-wide mt2 mid-gray"></p>
-        </div>
-        <div class="pa2 h2 bg-near-white flex justify-between">
-          <a class="url link underline-hover gray mw6 truncate"></a>
-          <a class="link icon dim pl2 fr br1 w1 h1 mw1" href="#" title="Home"></a>
-        </div>
       </article>
-      <form id="form" class="fl pr4 mb4 black-80 w-100 w-40-l w-70-m">
-        <svg
-          id="close-button"
-          class="xcrpt-close-button self-start mv3 absolute top-2 right-2"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M 15.18 12 L 22.34 4.84 C 23.22 3.96 23.22 2.54 22.34 1.66 C 21.46 0.78 20.04 0.78 19.16 1.66 L 12 8.82 L 4.84 1.66 C 3.96 0.78 2.54 0.78 1.66 1.66 C 0.78 2.54 0.78 3.96 1.66 4.84 L 8.82 12 L 1.66 19.16 C 0.78 20.04 0.78 21.46 1.66 22.34 C 2.1 22.78 2.67 23 3.25 23 C 3.83 23 4.4 22.78 4.84 22.34 L 12 15.18 L 19.16 22.34 C 19.6 22.78 20.17 23 20.75 23 C 21.33 23 21.9 22.78 22.34 22.34 C 23.22 21.46 23.22 20.04 22.34 19.16 L 15.18 12 Z"
-          ></path>
-        </svg>
-        <div class="">
-          <time class="f7 mv2 dib ttu tracked">&nbsp;</time>
-          <h3 class="f2 f1-m f-headline-m measure-narrow lh-title mv0">
-            <span id="name" class="bg-black-90 lh-copy white pa1 tracked-tight">
-              Web XCRPT
-            </span>
-          </h3>
-        </div>
-        <div>
-          <textarea
-            id="comment"
-            name="comment"
-            placeholder="Comments (optional)"
-            class="outline-0 db f5 border-box hover-black h4 w-100 b--black pa3 bw1 bl br-0 bt-0 bb-0 mv4 bg-transparent"
-            aria-describedby="comment-desc"
-          ></textarea>
-        </div>
-        <button
-          id="submit-button"
-          class="b ph3 pv2 input-reset ba b--black pointer f4 no-underline near-white bg-animate bg-near-black hover-bg-transparent hover-near-black inline-flex items-center tc br2 pa2 outline-0"
-          type="submit"
-        >
-          Excerpt
-        </button>
-        <a
-          id="unfurl-button"
-          href="#archive"
-          hidden
-          class="b ph3 pv2 input-reset ba b--black pointer f4 no-underline near-white bg-animate bg-near-black hover-bg-transparent hover-near-black items-center tc br2 pa2 outline-0"
-        >
-          Unfurl
-        </a>
-      </form>
-      <progress class="absolute bottom-0 left-0 w-100 ma0 pa0" min="0" max="100" value="0" />
-    </header>
-    <iframe
-      id="archive"
-      data-status="idle"
-      sandbox="allow-same-origin"
-      class="w-100 bn"
-      seamless=""
-      scrolling="no"
-    ></iframe>
   </body>
 </html>

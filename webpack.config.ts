@@ -14,7 +14,6 @@ const config: webpack.Configuration = {
   entry: {
     background: path.join(__dirname, srcDir + 'background.ts'),
     content: path.join(__dirname, srcDir + 'content.ts'),
-    xcrpt: path.join(__dirname, srcDir + 'xcrpt.ts'),
     ui: path.join(__dirname, srcDir + 'ui.ts'),
   },
   output: {

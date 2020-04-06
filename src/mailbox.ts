@@ -1,25 +1,24 @@
-import { ScrapeData } from './scraper'
-
-export type ArchiveData = { archiveURL: string; capturedAt: string }
+import * as Protocol from './protocol'
 
 export type Deactivate = { type: 'Deactivate' }
 export type Activate = { type: 'Activate' }
 export type CloseRequest = { type: 'CloseRequest' }
-export type ExcerptRequest = { type: 'ExcerptRequest' }
-export type ExcerptResponse = { type: 'ExcerptResponse'; excerpt: ScrapeData }
-export type ArchiveRequest = { type: 'ArchiveRequest' }
-export type ArchiveResponse = { type: 'ArchiveResponse'; archive: ArchiveData }
 
-export type ExtensionInbox =
-  | ArchiveRequest
-  | ArchiveResponse
-  | ExcerptRequest
-  | ExcerptResponse
-  | CloseRequest
+export type LookupResponse = {
+  type: 'LookupResponse'
+  response: { data: { lookup: Protocol.Resource } }
+}
 
-export type ScriptInbox = CloseRequest | ExcerptRequest | ArchiveRequest
+export type LookupRequest = {
+  type: 'LookupRequest'
+  url: string
+}
 
-export type UIInbox = ArchiveResponse | ExcerptResponse
+export type ExtensionInbox = CloseRequest | LookupRequest
+
+export type ScriptInbox = CloseRequest
+
+export type UIInbox = CloseRequest
 
 type Address =
   | { to: 'extension' }

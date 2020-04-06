@@ -1,69 +1,58 @@
-import { ExtensionInbox, ScriptInbox, ArchiveResponse } from './mailbox'
+import { ExtensionInbox, ScriptInbox } from './mailbox'
+import * as Protocol from './protocol'
 
-const onContextMenuAction = async (itemData: chrome.contextMenus.OnClickData) => {
-  if (itemData.selectionText) {
-    const clip = await clipSelection()
-    alert('no action taken')
-  }
-
-  if (itemData.mediaType === 'image' && itemData.srcUrl) {
-    const clip = await clipImage(itemData.srcUrl)
-    alert('no action taken')
-  }
-}
-
-const onBrowserAction = async (tab: chrome.tabs.Tab) => {
-  try {
-    await request(tab.id!, { type: 'Activate' })
-  } catch (error) {
-    if (error instanceof NoReceiverError) {
-      await executeScript({ file: 'content.js' })
+const onRequest = (message: ExtensionInbox) => {
+  switch (message.type) {
+    case 'CloseRequest': {
+      return close()
+    }
+    case 'LookupRequest': {
+      return lookup(message.url)
     }
   }
 }
 
-const clipSelection = async () => {
-  const selection = await executeFunction(() => {
-    const selection = window.getSelection()
-    return selection ? selection.toString() : null
+const lookup = async (url: string) => {
+  const request = await fetch('http://localhost:8080/graphql', {
+    method: 'POST',
+    headers: {
+      contentType: 'application/json',
+    },
+    body: JSON.stringify({
+      query: `{
+        lookup(url:"${url}") {
+          url
+          backLinks {
+            kind,
+            identifier,
+            name,
+            title,
+            referrer {
+              url
+              tags {
+                tag
+              }
+              links {
+                target{
+                  url
+                }
+              }
+            }
+          }
+          tags {
+            tag
+          }
+        }
+      }`,
+      variables: null,
+    }),
   })
-
-  if (selection) {
-    return {
-      src: window.location.href,
-      capturedAt: new Date().toISOString(),
-      dataUrl: `data:text/plain,${selection[0]}`,
-    }
-  }
+  const data: { data: { lookup: Protocol.Resource } } = await request.json()
+  console.log(data)
+  return { type: 'LookupResponse', response: data }
 }
 
-const clipImage = (url: string) =>
-  new Promise((resolve, reject) => {
-    const tmpImage = new Image()
-    const canvas = document.createElement('canvas')
-
-    tmpImage.crossOrigin = 'anonymous'
-    tmpImage.src = url
-
-    tmpImage.onload = () => {
-      canvas.width = tmpImage.width
-      canvas.height = tmpImage.height
-
-      const context = canvas.getContext('2d')
-      if (!context) {
-        return reject(new Error('Failed to get a 2d context for the canvas!'))
-      }
-      context.drawImage(tmpImage, 0, 0)
-
-      resolve({
-        src: url,
-        capturedAt: new Date().toISOString(),
-        dataUrl: canvas.toDataURL(),
-      })
-    }
-    tmpImage.onerror = reject
-  })
-
+const close = () => {}
 const executeScript = (details: chrome.tabs.InjectDetails): Promise<any> =>
   new Promise((resolve, reject) => {
     chrome.tabs.executeScript(details, (results) => {
@@ -111,5 +100,12 @@ const request = <a, b>(tabId: number, message: a): Promise<b> =>
     })
   })
 
-chrome.browserAction.onClicked.addListener(onBrowserAction)
-chrome.contextMenus.onClicked.addListener(onContextMenuAction)
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  let response = onRequest(request)
+  if (response) {
+    Promise.resolve(response).then(sendResponse)
+  }
+  return true
+})
+// chrome.browserAction.onClicked.addListener(onBrowserAction)
+// chrome.contextMenus.onClicked.addListener(onContextMenuAction)
