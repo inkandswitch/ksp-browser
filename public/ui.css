@@ -56,7 +56,7 @@ aside {
 
 h2 {
   max-width: 20em;
-  font-size: 2.25rem;
+  font-size: 1.7rem;
   line-height: 1.25;
   box-sizing: border-box;
   margin: 0.5em;
@@ -86,7 +86,20 @@ a {
 
 a:hover {
   color: var(--active-link-text-color);
-  border-bottom-color: var(--active-link-text-color);
+  border-color: var(--active-link-text-color);
+}
+
+.tag {
+  font-size: 0.5em;
+  border-radius: 4px;
+  padding: 2px;
+  margin: 4px;
+  border: 1px solid var(--bg-border-color);
+}
+.tag:hover {
+  color: var(--text-color);
+  border-color: var(--bg-border-color);
+  background: var(--bg-border-color);
 }
 
 /* ------------------------------------------------- */
