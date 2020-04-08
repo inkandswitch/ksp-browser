@@ -1,22 +1,35 @@
 import * as Protocol from './protocol'
 
-export type Deactivate = { type: 'Deactivate' }
-export type Activate = { type: 'Activate' }
+export type Disable = { type: 'Disable' }
+export type Enable = { type: 'Enable' }
 export type CloseRequest = { type: 'CloseRequest' }
 
-export type LookupResponse = {
-  type: 'LookupResponse'
-  response: { data: { lookup: Protocol.Resource } }
+export type ToggleRequest = {
+  type: 'Toggle'
 }
 
-export type LookupRequest = {
-  type: 'LookupRequest'
+export type ResourceResponse = {
+  type: 'ResourceResponse'
+  response: { data: { resource: Protocol.Resource } }
+}
+
+export type ResourceRequest = {
+  type: 'ResourceRequest'
   url: string
 }
 
-export type ExtensionInbox = CloseRequest | LookupRequest
+export type TagsRequest = {
+  type: 'TagsRequest'
+}
 
-export type ScriptInbox = CloseRequest
+export type TagsResponse = {
+  type: 'TagsResponse'
+  response: { data: { tags: Protocol.Tag[] } }
+}
+
+export type ExtensionInbox = CloseRequest | ResourceRequest | TagsRequest
+
+export type ScriptInbox = ToggleRequest
 
 export type UIInbox = CloseRequest
 

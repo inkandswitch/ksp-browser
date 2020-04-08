@@ -31,6 +31,19 @@
   }
 }
 
+aside.panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  max-height: 50vh;
+  width: 100%;
+  overflow: auto;
+}
+
+aside.inline {
+  position: relative;
+}
+
 aside {
   font-family: var(--font);
   font-style: var(--font-size);
@@ -74,4 +87,190 @@ a {
 a:hover {
   color: var(--active-link-text-color);
   border-bottom-color: var(--active-link-text-color);
+}
+
+/* ------------------------------------------------- */
+
+.notification {
+  line-height: 1.15; /* 1 */
+  -webkit-text-size-adjust: 100%;
+
+  pointer-events: none;
+  position: fixed;
+  display: inline-block;
+  z-index: 1000;
+  bottom: 10px;
+  right: 10px;
+  left: unset;
+  background-image: none;
+  background-color: transparent;
+  border: none;
+  margin: 10px;
+  padding: 0;
+
+  font-family: var(--font-family);
+}
+
+.notification form .version {
+  margin-right: 20px;
+}
+
+.notification .status {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  display: block;
+  text-indent: -9999px;
+}
+
+.notification .status:after {
+  content: '';
+  background-color: white;
+  display: inline-block;
+  border-radius: 100%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  width: 0.8rem;
+  height: 0.8rem;
+  transition: 0.3s;
+  position: absolute;
+  right: 3px;
+  top: 3px;
+}
+
+.update input:checked + form:not(:hover) .status:after {
+  background: transparent;
+  border-left: 2px solid #ffffff;
+  animation: spin 0.8s infinite linear;
+}
+
+.notification input:not(:checked) + form .status:after {
+  right: calc(100% - 3px);
+  transform: translateX(100%);
+}
+
+.notification input:checked + form .status:after {
+  right: 3px;
+}
+
+.notification input:checked + form .version {
+  opacity: 1;
+}
+
+.notification input + form .version {
+  opacity: 0;
+  transition: 0.3s;
+}
+
+.notification input[type='checkbox'] {
+  position: absolute;
+  opacity: 0;
+  display: block;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  pointer-events: all;
+  z-index: 10;
+}
+
+.notification.update {
+  animation: upgrade 1.2s infinite ease-in-out;
+}
+
+.notification.hide > form {
+  transform: scale(0);
+}
+
+.notification:hover > form {
+  transform: scale(1);
+}
+
+.notification > form {
+  transform: scale(1);
+}
+
+.notification form {
+  color: white;
+  pointer-events: all;
+  min-width: 1px;
+  box-sizing: border-box;
+  display: inline-block;
+
+  border-radius: 3em;
+  box-shadow: 0 0 18px rgba(100, 100, 100, 0.5);
+
+  margin: 0 auto;
+  transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1) padding,
+    0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55) transform, 0.2s ease background-color,
+    0.2s ease opacity;
+}
+
+.notification > form {
+  animation: expand 0.2s ease;
+}
+
+@keyframes expand {
+  from {
+    transform: scale(0);
+  }
+}
+
+.notification input:checked + form {
+  /* background: rgb(83, 64, 242); */
+  background-color: var(--bg-color);
+  opacity: 1;
+}
+
+.notification form {
+  /* background: #444249; */
+  opacity: 0.5;
+}
+
+.notification > form > label {
+  box-sizing: border-box;
+}
+
+.notification > form:hover,
+.active.notification > form {
+}
+
+.notification > form > .version:after {
+  content: '';
+}
+
+.notification > form > label {
+  display: inline-block;
+
+  transform: scale(1);
+  font-size: 22px;
+  font-size: 0.6rem;
+  text-align: right;
+  line-height: 1.15;
+  padding: 0.3rem;
+  cursor: pointer;
+  transition: 0.6s ease transform;
+}
+
+@keyframes spin {
+  0% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}
+
+.active.notification {
+  width: 100%;
+  background: var(--bg-color);
+  left: 0;
+  margin: 0;
+  padding: 0;
+  bottom: 0;
+  max-width: 100%;
+  position: absolute;
 }

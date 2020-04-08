@@ -3,14 +3,31 @@ import {
   ScriptInbox,
   UIInbox,
   CloseRequest,
-  Activate,
-  Deactivate,
-  LookupResponse,
+  Enable,
+  Disable,
+  ResourceResponse,
+  ToggleRequest,
 } from './mailbox'
 import * as Protocol from './protocol'
 import { Program, Context } from './program'
+// No idea why just `from 'lit-html' does not seem to work here.
 import { html, render as renderHTML, nothing } from '../node_modules/lit-html/lit-html'
 import { stat } from 'fs'
+import Turndown from 'turndown'
+import { gfm } from 'turndown-plugin-gfm'
+import { md } from './remark'
+
+// const turndown = new Turndown({
+//   headingStyle: 'atx',
+//   hr: '---',
+//   bulletListMarker: '-',
+//   codeBlockStyle: 'fenced',
+//   emDelimiter: '_',
+//   strongDelimiter: '**',
+//   linkStyle: 'referenced',
+//   linkReferenceStyle: 'collapsed',
+// })
+// turndown.use(gfm)
 
 const onUIMessage = (message: MessageEvent) => {
   switch (message.type) {
@@ -27,44 +44,37 @@ const close = () => {
   }
 }
 
-type Inactive = { isActive: false }
-type Active = { isActive: true; resource: Protocol.Resource }
-type Model = Inactive | Active
-type Message = Activate | Deactivate | Request | Response | LookupResponse
+enum Mode {
+  Active,
+  Enabled,
+  Disabled,
+}
+
+type Model = {
+  mode: Mode
+  resource: null | Protocol.Resource
+}
+
+type Message = Enable | Disable | ResourceResponse | ToggleRequest
 type Address = { tabId: number; frameId: number }
 
-type Request = {
-  type: 'Request'
-  request: ScriptInbox
-  port: chrome.runtime.Port
-}
-
-type Response = {
-  type: 'Response'
-  response: 'TODO'
-  port: chrome.runtime.Port
-}
-
 const init = (): [Model, Promise<null | Message>] => {
-  return [{ isActive: false }, queryKnowledgeServer()]
+  return [{ mode: Mode.Enabled, resource: null }, queryKnowledgeServer()]
 }
 
 const update = (message: Message, state: Model): [Model, null | Promise<null | Message>] => {
   switch (message.type) {
-    case 'Activate': {
-      return [activate(state), null]
+    case 'Enable': {
+      return [enable(state), null]
     }
-    case 'LookupResponse': {
-      return [setMetadata(state, message.response.data.lookup), null]
+    case 'Disable': {
+      return [disable(state), null]
     }
-    case 'Deactivate': {
-      return deactivate(state)
+    case 'Toggle': {
+      return [toggle(state), null]
     }
-    case 'Response': {
-      return [state, respond(message)]
-    }
-    case 'Request': {
-      return handleRequest(message, state)
+    case 'ResourceResponse': {
+      return [setMetadata(state, message.response.data.resource), null]
     }
   }
 }
@@ -77,15 +87,7 @@ const queryKnowledgeServer = (): Promise<Message | null> => {
   let url = new URL(window.location.href)
   url.search = ''
   url.hash = ''
-  return request({ type: 'LookupRequest', url: url.href })
-}
-
-const handleRequest = (message: Request, state: Model): [Model, null | Promise<null | Message>] => {
-  switch (message.request.type) {
-    case 'CloseRequest': {
-      return deactivate(state)
-    }
-  }
+  return request({ type: 'ResourceRequest', url: url.href })
 }
 
 class UIRequest {
@@ -99,13 +101,23 @@ class UIRequest {
   }
 }
 
-const deactivate = (state: Model): [Model, null] => [{ isActive: false }, null]
-
-const activate = (state: Model) => {
-  if (state.isActive) {
-    return state
+const disable = (state: Model): Model => ({ ...state, mode: Mode.Disabled })
+const enable = (state: Model) => {
+  if (state.mode === Mode.Disabled) {
+    return { ...state, mode: Mode.Enabled }
   } else {
     return state
+  }
+}
+
+const toggle = (state: Model): Model => {
+  switch (state.mode) {
+    case Mode.Disabled:
+      return state
+    case Mode.Enabled:
+      return { ...state, mode: Mode.Active }
+    case Mode.Active:
+      return { ...state, mode: Mode.Enabled }
   }
 }
 
@@ -121,28 +133,34 @@ const view = (context: Context<Model>) => {
   }
 }
 
-const getContext = (state: Model): null | Protocol.Resource => {
-  if (!state.isActive) {
-    return null
+const getContext = ({ resource }: Model): null | Protocol.Resource => {
+  if (resource && (resource.backLinks.length > 0 || resource.tags.length > 0)) {
+    return resource
   } else {
-    const { resource } = state
-    if (resource.backLinks.length > 0 || resource.tags.length > 0) {
-      return resource
-    } else {
-      return null
-    }
+    return null
   }
 }
 
 const render = (state: Model) => {
   const context = getContext(state)
-  return context ? renderActive(context) : nothing
+  if (!context) return nothing
+  switch (state.mode) {
+    case Mode.Disabled:
+      return nothing
+    case Mode.Enabled:
+      return renderInline(context)
+    case Mode.Active:
+      return renderPanel(context)
+  }
 }
 
-const renderActive = (resource: Protocol.Resource) =>
+const renderInline = (resource: Protocol.Resource) => renderUI(resource, 'inline')
+const renderPanel = (resource: Protocol.Resource) => renderUI(resource, 'panel')
+
+const renderUI = (resource: Protocol.Resource, mode: string) =>
   html`
     <link rel="stylesheet" href="${chrome.extension.getURL('ui.css')}" />
-    <aside class="sans-serif">
+    <aside class="sans-serif ${mode}">
       ${renderBacklinks(resource.backLinks)}
     </aside>
   `
@@ -156,45 +174,27 @@ const renderBacklinks = (backLinks: Protocol.Link[]) =>
             (link) =>
               html`<li class="backlink">
                 <a target="_blank" title="${link.title}" href="${link.referrer.url}">
-                  ${link.referrer.url.split('/').pop()}
+                  ${link.referrer.info.title || link.referrer.url.split('/').pop()}
                 </a>
                 →
                 <a target="_blank" href="${chrome.extension.getURL('ui.html')}#${link.name}">
                   ${link.name}
                 </a>
+
+                <p>
+                  ${md(link.fragment || link.referrer.info.description)}
+                </p>
               </li>`
           )}
         </ul>`
 
-// const view = (context: Context<Model>) => {
-//   if (context.state.isActive) {
-//     viewActive(document)
-//   } else {
-//     viewInactive(document)
-//   }
-// }
-
-const viewActive = (document: Document) => {
-  const view = document.querySelector('iframe#xcrpt')
-  if (!view) {
-    const view = document.createElement('iframe')
-    view.id = 'xcrpt'
-    view.src = chrome.extension.getURL('ui.html')
-    view.setAttribute(
-      'style',
-      'dispaly:block!important;border:none!important;height:100vh!important;width:100%!important;clip:auto!important;'
-    )
-    document.documentElement.appendChild(view)
-    view.focus()
-  }
-}
-
-const viewInactive = (document: Document) => {
-  const view = <HTMLIFrameElement>document.querySelector('iframe#xcrpt')
-  if (view) {
-    view.remove()
-  }
-}
+const renderStatus = (resource: Protocol.Resource) => html`<dialog class="notification">
+  <input id="hotswap" type="checkbox" checked />
+  <form>
+    <label class="version" for="hotswap">${resource.backLinks.length}</label>
+    <label class="status">&nbsp;</label>
+  </form>
+</dialog>`
 
 const onload = async () => {
   const program = Program.ui(
@@ -209,35 +209,12 @@ const onload = async () => {
   )
 
   const onunload = () => {
-    window.removeEventListener('message', onWindowMessage)
     chrome.runtime.onMessage.removeListener(onExtensionMessage)
-    chrome.runtime.onConnect.removeListener(onConnect)
-    program.send({ type: 'Deactivate' })
+    program.send({ type: 'Disable' })
   }
 
-  const onWindowMessage = (event: MessageEvent) => {
-    const frame = <null | HTMLIFrameElement>document.querySelector('#xcrpt')
-    if (frame && frame.src.startsWith(event.origin) && event.data.type === 'unload') {
-      onunload()
-    }
-  }
-  const onExtensionMessage = (message: Activate) => program.send(message)
-  const onConnect = (port: chrome.runtime.Port) => {
-    port.onMessage.addListener((request: ScriptInbox, port: chrome.runtime.Port) => {
-      const message: Request = {
-        type: 'Request',
-        request,
-        port,
-      }
-
-      console.log('Content Inbox', request)
-
-      program.send(message)
-    })
-  }
-  window.addEventListener('message', onWindowMessage)
+  const onExtensionMessage = (message: ScriptInbox) => program.send(message)
   chrome.runtime.onMessage.addListener(onExtensionMessage)
-  chrome.runtime.onConnect.addListener(onConnect)
 }
 
 const send = async (message: ExtensionInbox) => {
@@ -260,38 +237,5 @@ const request = (message: ExtensionInbox): Promise<Message | null> =>
       }
     })
   })
-
-const respond = async ({ port, response }: Response) => {
-  port.postMessage(response)
-  return null
-}
-
-// class HTMLContextElement extends HTMLElement {
-//   view: any
-//   shadowRoot!: ShadowRoot
-//   static get observedAttributes(): string[] {
-//     return []
-//   }
-//   constructor() {
-//     super()
-//     this.view = nothing
-//   }
-//   connectedCallback() {
-//     this.attachShadow({ mode: 'open' })
-//     this.update()
-//   }
-//   update() {
-//     this.view = this.render()
-//     this.transact()
-//   }
-//   render() {
-//     return nothing
-//   }
-//   disconnectedCallback() {}
-//   attributeChangedCallback(name: string, before: string, after: string) {}
-//   transact() {
-//     render(this.view, this.shadowRoot, { eventContext: this })
-//   }
-// }
 
 onload()

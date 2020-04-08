@@ -1,18 +1,29 @@
-import { ExtensionInbox, ScriptInbox } from './mailbox'
+import { ExtensionInbox, ScriptInbox, ResourceResponse } from './mailbox'
 import * as Protocol from './protocol'
 
-const onRequest = (message: ExtensionInbox) => {
+const onRequest = async (message: ExtensionInbox, { tab }: chrome.runtime.MessageSender) => {
   switch (message.type) {
     case 'CloseRequest': {
       return close()
     }
-    case 'LookupRequest': {
-      return lookup(message.url)
+    case 'ResourceRequest': {
+      chrome.browserAction.disable(tab!.id!)
+      chrome.browserAction.setIcon({ path: 'disable-icon-128.png', tabId: tab!.id })
+      chrome.browserAction.setBadgeText({ text: ``, tabId: tab!.id })
+      const payload = await resource(message.url)
+      const count = payload.response.data.resource.backLinks.length
+      if (count > 0) {
+        chrome.browserAction.enable(tab!.id)
+        chrome.browserAction.setIcon({ path: 'icon-128.png', tabId: tab!.id })
+        chrome.browserAction.setBadgeText({ text: `${count}`, tabId: tab!.id })
+      }
+
+      return payload
     }
   }
 }
 
-const lookup = async (url: string) => {
+const resource = async (url: string): Promise<ResourceResponse> => {
   const request = await fetch('http://localhost:8080/graphql', {
     method: 'POST',
     headers: {
@@ -20,17 +31,24 @@ const lookup = async (url: string) => {
     },
     body: JSON.stringify({
       query: `{
-        lookup(url:"${url}") {
+        resource(url:"${url}") {
           url
           backLinks {
-            kind,
-            identifier,
-            name,
-            title,
+            kind
+            identifier
+            name
+            title
+            fragment
+            location
             referrer {
               url
+              info {
+                title
+                description
+                cid
+              }
               tags {
-                tag
+                name
               }
               links {
                 target{
@@ -40,16 +58,15 @@ const lookup = async (url: string) => {
             }
           }
           tags {
-            tag
+            name
           }
         }
       }`,
       variables: null,
     }),
   })
-  const data: { data: { lookup: Protocol.Resource } } = await request.json()
-  console.log(data)
-  return { type: 'LookupResponse', response: data }
+  const data = await request.json()
+  return { type: 'ResourceResponse', response: data }
 }
 
 const close = () => {}
@@ -101,7 +118,7 @@ const request = <a, b>(tabId: number, message: a): Promise<b> =>
   })
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  let response = onRequest(request)
+  let response = onRequest(request, sender)
   if (response) {
     Promise.resolve(response).then(sendResponse)
   }
@@ -109,3 +126,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 })
 // chrome.browserAction.onClicked.addListener(onBrowserAction)
 // chrome.contextMenus.onClicked.addListener(onContextMenuAction)
+
+chrome.browserAction.disable()
+chrome.browserAction.setIcon({ path: 'disable-icon-128.png' })
+chrome.browserAction.setBadgeBackgroundColor({ color: '#000' })
+chrome.browserAction.onClicked.addListener((tab) => {
+  chrome.tabs.sendMessage(tab.id!, { type: 'Toggle' })
+})

@@ -17,7 +17,10 @@
   ],
   "web_accessible_resources": ["ui.html", "ui.css", "back-link-alt-solid.svg"],
   "browser_action": {
-    "default_title": "Nothing"
+    "default_title": "Context",
+    "default_icon": {
+      "128": "icon-128.png"
+    }
   },
   "commands": {
     "_execute_browser_action": {
