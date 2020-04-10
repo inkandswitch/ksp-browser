@@ -58,9 +58,9 @@ export const clipSummary = (document: Document): ScrapeData => {
     url: document.URL,
     icon: scrapeIcon(document.documentElement),
     hero: [...scrapeHeroImgUrls(document.documentElement)],
-    title: scrapeTitle(document.documentElement, ''),
-    description: scrapeDescription(document.documentElement, ''),
-    name: scrapeSiteName(document.documentElement, ''),
+    title: scrapeTitle(document.documentElement, '').trim(),
+    description: scrapeDescription(document.documentElement, '').trim(),
+    name: scrapeSiteName(document.documentElement, '').trim(),
   }
 }
 
@@ -86,10 +86,10 @@ const query = function* <a>(
   }
 }
 
-const getText = ({ textContent }: Element): string => textContent || ''
+const getText = ({ textContent }: Element): string => (textContent || '').trim()
 
 const getContent = (metaEl: Element): string | null =>
-  !(metaEl instanceof HTMLMetaElement) ? null : metaEl.content == '' ? null : metaEl.content
+  !(metaEl instanceof HTMLMetaElement) ? null : metaEl.content == '' ? null : metaEl.content.trim()
 
 const getSrc = (imgEl: HTMLImageElement): string => imgEl.src
 
@@ -176,7 +176,7 @@ const cleanTitle = (text: string): string => {
   return title.trim()
 }
 
-const getCleanText = (el: Element) => cleanTitle(getText(el))
+export const getCleanText = (el: Element) => cleanTitle(getText(el))
 
 // Content scrapers
 // -----------------------------------------------------------------------------
@@ -209,18 +209,18 @@ const scrapeDescriptionFromContent = (pageEl: Element, fallback: string) => {
 
   const paragraphs = query('p', identity, pageEl)
 
-  const isQualified = (p: Element) => {
-    const qualified =
-      !isUnlikelyCandidate(p) &&
-      isTextSufficientlyLong(p) &&
-      !isHighLinkDensity(p) &&
-      isSufficientlyContenty(p)
-
-    return qualified
-  }
-
-  const qualified = filter(isQualified, paragraphs)
+  const qualified = filter(isQualifiedDescription, paragraphs)
   return map(getText, qualified)
+}
+
+export const isQualifiedDescription = (p: Element) => {
+  const qualified =
+    !isUnlikelyCandidate(p) &&
+    isTextSufficientlyLong(p) &&
+    !isHighLinkDensity(p) &&
+    isSufficientlyContenty(p)
+
+  return qualified
 }
 
 // Find a good description for the page.

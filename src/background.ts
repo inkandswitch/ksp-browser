@@ -10,8 +10,8 @@ const onRequest = async (message: ExtensionInbox, { tab }: chrome.runtime.Messag
       chrome.browserAction.disable(tab!.id!)
       chrome.browserAction.setIcon({ path: 'disable-icon-128.png', tabId: tab!.id })
       chrome.browserAction.setBadgeText({ text: ``, tabId: tab!.id })
-      const payload = await resource(message.url)
-      const count = payload.response.data.resource.backLinks.length
+      const payload = await ingest(message.resource)
+      const count = payload.response.data.ingest.backLinks.length
       if (count > 0) {
         chrome.browserAction.enable(tab!.id)
         chrome.browserAction.setIcon({ path: 'icon-128.png', tabId: tab!.id })
@@ -23,46 +23,63 @@ const onRequest = async (message: ExtensionInbox, { tab }: chrome.runtime.Messag
   }
 }
 
-const resource = async (url: string): Promise<ResourceResponse> => {
+const ingest = async (resource: Protocol.InputResource): Promise<ResourceResponse> => {
   const request = await fetch('http://localhost:8080/graphql', {
     method: 'POST',
     headers: {
       contentType: 'application/json',
     },
     body: JSON.stringify({
-      query: `{
-        resource(url:"${url}") {
+      operationName: 'Ingest',
+      variables: { resource },
+      query: `mutation Ingest($resource:InputResource!) {
+        ingest(resource:$resource) {
           url
-          backLinks {
-            kind
-            identifier
-            name
-            title
-            fragment
-            location
-            referrer {
+          links {
+            target {
               url
-              info {
-                title
-                description
-                cid
-              }
-              tags {
-                name
-              }
-              links {
-                target{
-                  url
-                }
+              backLinks {
+                ...backLink
               }
             }
           }
+          backLinks {
+            ...backLink
+          }
           tags {
-            name
+            ...tag
+          }
+        }
+      }
+
+      fragment tag on Tag {
+        name
+      }
+
+      fragment backLink on Link {
+        kind
+        identifier
+        name
+        title
+        fragment
+        location
+        referrer {
+          url
+          info {
+            title
+            description
+            cid
+          }
+          tags {
+            ...tag
+          }
+          links {
+            target{
+              url
+            }
           }
         }
       }`,
-      variables: null,
     }),
   })
   const data = await request.json()

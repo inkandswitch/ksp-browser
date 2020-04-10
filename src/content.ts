@@ -13,21 +13,8 @@ import { Program, Context } from './program'
 // No idea why just `from 'lit-html' does not seem to work here.
 import { html, render as renderHTML, nothing } from '../node_modules/lit-html/lit-html'
 import { stat } from 'fs'
-import Turndown from 'turndown'
-import { gfm } from 'turndown-plugin-gfm'
 import { md } from './remark'
-
-// const turndown = new Turndown({
-//   headingStyle: 'atx',
-//   hr: '---',
-//   bulletListMarker: '-',
-//   codeBlockStyle: 'fenced',
-//   emDelimiter: '_',
-//   strongDelimiter: '**',
-//   linkStyle: 'referenced',
-//   linkReferenceStyle: 'collapsed',
-// })
-// turndown.use(gfm)
+import * as scanner from './scanner'
 
 const onUIMessage = (message: MessageEvent) => {
   switch (message.type) {
@@ -74,7 +61,7 @@ const update = (message: Message, state: Model): [Model, null | Promise<null | M
       return [toggle(state), null]
     }
     case 'ResourceResponse': {
-      return [setMetadata(state, message.response.data.resource), null]
+      return [setMetadata(state, message.response.data.ingest), null]
     }
   }
 }
@@ -83,11 +70,11 @@ const setMetadata = (state: Model, resource: Protocol.Resource) => {
   return { ...state, isActive: true, resource }
 }
 
-const queryKnowledgeServer = (): Promise<Message | null> => {
-  let url = new URL(window.location.href)
-  url.search = ''
-  url.hash = ''
-  return request({ type: 'ResourceRequest', url: url.href })
+const queryKnowledgeServer = async (): Promise<Message | null> => {
+  const resource = scanner.read(document)
+  const response = await request({ type: 'ResourceRequest', resource })
+  console.log(response)
+  return response
 }
 
 class UIRequest {
@@ -176,10 +163,15 @@ const renderBacklinks = (backLinks: Protocol.Link[]) =>
                 <a target="_blank" title="${link.title}" href="${link.referrer.url}">
                   ${link.referrer.info.title || link.referrer.url.split('/').pop()}
                 </a>
-                →
-                <a target="_blank" href="${chrome.extension.getURL('ui.html')}#${link.name}">
-                  ${link.name}
-                </a>
+                ${link.referrer.tags.map(
+                  ({ name }) => html`<a href="#${name}" class="tag">${name}</a>`
+                )}
+                ${link.kind != Protocol.LinkKind.REFERENCE
+                  ? nothing
+                  : html`→
+                      <a target="_blank" href="${chrome.extension.getURL('ui.html')}#${link.name}">
+                        ${link.name}
+                      </a>`}
 
                 <p>
                   ${md(link.fragment || link.referrer.info.description)}

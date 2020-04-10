@@ -10,12 +10,12 @@ export type ToggleRequest = {
 
 export type ResourceResponse = {
   type: 'ResourceResponse'
-  response: { data: { resource: Protocol.Resource } }
+  response: { data: { ingest: Protocol.Resource } }
 }
 
 export type ResourceRequest = {
   type: 'ResourceRequest'
-  url: string
+  resource: Protocol.InputResource
 }
 
 export type TagsRequest = {

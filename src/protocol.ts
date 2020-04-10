@@ -36,3 +36,34 @@ export type Tag = {
   location: string | null | void
   target: Resource
 }
+
+export type Option<t> = null | t
+
+export type Vec<t> = t[]
+
+export type InputResource = {
+  url: string
+  cid: Option<string>
+  title: string
+  description: string
+  links: Option<Vec<InputLink>>
+  tags: Option<Vec<InputTag>>
+}
+
+export type InputLink = {
+  targetURL: string
+
+  referrerFragment: Option<string>
+  referrerLocation: Option<string>
+
+  kind: LinkKind
+  name: string
+  title: string
+  identifier: Option<string>
+}
+
+export type InputTag = {
+  name: string
+  targetFragment: Option<string>
+  targetLocation: Option<string>
+}
