@@ -8,6 +8,16 @@ export type ToggleRequest = {
   type: 'Toggle'
 }
 
+export type OpenRequest = {
+  type: 'OpenRequest'
+  url: string
+}
+
+export type OpenResponse = {
+  type: 'OpenResponse'
+  response: { data: { open: Protocol.Open } }
+}
+
 export type ResourceResponse = {
   type: 'ResourceResponse'
   response: { data: { ingest: Protocol.Resource } }
@@ -27,7 +37,7 @@ export type TagsResponse = {
   response: { data: { tags: Protocol.Tag[] } }
 }
 
-export type ExtensionInbox = CloseRequest | ResourceRequest | TagsRequest
+export type ExtensionInbox = CloseRequest | ResourceRequest | TagsRequest | OpenRequest
 
 export type ScriptInbox = ToggleRequest
 

@@ -7,6 +7,8 @@ import {
   Disable,
   ResourceResponse,
   ToggleRequest,
+  OpenRequest,
+  OpenResponse,
 } from './mailbox'
 import * as Protocol from './protocol'
 import { Program, Context } from './program'
@@ -42,7 +44,7 @@ type Model = {
   resource: null | Protocol.Resource
 }
 
-type Message = Enable | Disable | ResourceResponse | ToggleRequest
+type Message = Enable | Disable | ResourceResponse | ToggleRequest | OpenRequest | OpenResponse
 type Address = { tabId: number; frameId: number }
 
 const init = (): [Model, Promise<null | Message>] => {
@@ -60,6 +62,12 @@ const update = (message: Message, state: Model): [Model, null | Promise<null | M
     case 'Toggle': {
       return [toggle(state), null]
     }
+    case 'OpenRequest': {
+      return [state, open(message.url)]
+    }
+    case 'OpenResponse': {
+      return [state, null]
+    }
     case 'ResourceResponse': {
       return [setMetadata(state, message.response.data.ingest), null]
     }
@@ -76,6 +84,8 @@ const queryKnowledgeServer = async (): Promise<Message | null> => {
   console.log(response)
   return response
 }
+
+const open = async (url: string): Promise<Message | null> => request({ type: 'OpenRequest', url })
 
 class UIRequest {
   type: 'UIRequest'
@@ -115,6 +125,7 @@ const view = (context: Context<Model>) => {
     let shadowRoot = view.attachShadow({ mode: 'open' })
     renderHTML(render(context.state), shadowRoot)
     document.documentElement.appendChild(view)
+    shadowRoot.addEventListener('click', context)
   } else {
     renderHTML(render(context.state), view.shadowRoot!)
   }
@@ -157,28 +168,29 @@ const renderBacklinks = (backLinks: Protocol.Link[]) =>
     ? nothing
     : html`<h2 class="marked"><span>Backlinks</span></h2>
         <ul>
-          ${backLinks.map(
-            (link) =>
-              html`<li class="backlink">
-                <a target="_blank" title="${link.title}" href="${link.referrer.url}">
-                  ${link.referrer.info.title || link.referrer.url.split('/').pop()}
-                </a>
-                ${link.referrer.tags.map(
-                  ({ name }) => html`<a href="#${name}" class="tag">${name}</a>`
-                )}
-                ${link.kind != Protocol.LinkKind.REFERENCE
-                  ? nothing
-                  : html`→
-                      <a target="_blank" href="${chrome.extension.getURL('ui.html')}#${link.name}">
-                        ${link.name}
-                      </a>`}
-
-                <p>
-                  ${md(link.fragment || link.referrer.info.description)}
-                </p>
-              </li>`
-          )}
+          ${backLinks.map(renderBacklink)}
         </ul>`
+
+const renderBacklink = (link: Protocol.Link) =>
+  html`<li class="backlink">
+    <a target="_blank" title="${link.title}" href="${link.referrer.url}">
+      ${link.referrer.info.title || link.referrer.url.split('/').pop()}
+    </a>
+    ${link.referrer.tags.map(({ name }) => html`<a href="#${name}" class="tag">${name}</a>`)}
+    ${renderReference(link)}
+    <p>
+      ${md(link.fragment || link.referrer.info.description)}
+    </p>
+  </li>`
+
+const renderReference = (link: Protocol.Link) =>
+  link.identifier == null || link.identifier === '' ? nothing : renderReferenceLinkTarget(link)
+
+const renderReferenceLinkTarget = (link: Protocol.Link) =>
+  html`→
+    <a target="_blank" href="${chrome.extension.getURL('ui.html')}#${link.identifier}">
+      ${link.identifier}
+    </a>`
 
 const renderStatus = (resource: Protocol.Resource) => html`<dialog class="notification">
   <input id="hotswap" type="checkbox" checked />
@@ -188,12 +200,37 @@ const renderStatus = (resource: Protocol.Resource) => html`<dialog class="notifi
   </form>
 </dialog>`
 
+const onEvent = (event: Event): Message | null => {
+  switch (event.type) {
+    case 'click': {
+      return onClick(<MouseEvent>event)
+    }
+    default: {
+      return null
+    }
+  }
+}
+
+const onClick = (event: MouseEvent): Message | null => {
+  const target = <HTMLElement>event.target
+  if (target.localName === 'a') {
+    const anchor = <HTMLAnchorElement>target
+    if (!anchor.href.startsWith('http')) {
+      event.preventDefault()
+      return { type: 'OpenRequest', url: anchor.href }
+    } else {
+      return null
+    }
+  }
+  return null
+}
+
 const onload = async () => {
   const program = Program.ui(
     {
       init,
       update,
-      onEvent: () => null,
+      onEvent,
       render: view,
     },
     undefined,

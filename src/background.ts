@@ -1,10 +1,13 @@
-import { ExtensionInbox, ScriptInbox, ResourceResponse } from './mailbox'
+import { ExtensionInbox, ScriptInbox, ResourceResponse, OpenResponse } from './mailbox'
 import * as Protocol from './protocol'
 
 const onRequest = async (message: ExtensionInbox, { tab }: chrome.runtime.MessageSender) => {
   switch (message.type) {
     case 'CloseRequest': {
       return close()
+    }
+    case 'OpenRequest': {
+      return await open(message.url)
     }
     case 'ResourceRequest': {
       chrome.browserAction.disable(tab!.id!)
@@ -23,13 +26,28 @@ const onRequest = async (message: ExtensionInbox, { tab }: chrome.runtime.Messag
   }
 }
 
-const ingest = async (resource: Protocol.InputResource): Promise<ResourceResponse> => {
-  const request = await fetch('http://localhost:8080/graphql', {
-    method: 'POST',
-    headers: {
-      contentType: 'application/json',
+const open = async (url: string): Promise<OpenResponse> =>
+  ksp(
+    {
+      query: `mutation open {
+        open(url:${JSON.stringify(url)}) {
+          openOk
+          exitOk
+          code
+        }
+      }`,
+      operationName: 'open',
+      variables: {},
     },
-    body: JSON.stringify({
+    (data): OpenResponse => ({
+      type: 'OpenResponse',
+      response: { data },
+    })
+  )
+
+const ingest = async (resource: Protocol.InputResource): Promise<ResourceResponse> =>
+  ksp(
+    {
       operationName: 'Ingest',
       variables: { resource },
       query: `mutation Ingest($resource:InputResource!) {
@@ -80,10 +98,20 @@ const ingest = async (resource: Protocol.InputResource): Promise<ResourceRespons
           }
         }
       }`,
-    }),
+    },
+    (data) => ({ type: 'ResourceResponse', response: data })
+  )
+
+const ksp = async <a, b>(input: a, decode: (output: any) => b): Promise<b> => {
+  const request = await fetch('http://localhost:8080/graphql', {
+    method: 'POST',
+    headers: {
+      contentType: 'application/json',
+    },
+    body: JSON.stringify(input),
   })
   const data = await request.json()
-  return { type: 'ResourceResponse', response: data }
+  return decode(data)
 }
 
 const close = () => {}

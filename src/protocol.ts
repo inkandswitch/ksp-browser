@@ -67,3 +67,9 @@ export type InputTag = {
   targetFragment: Option<string>
   targetLocation: Option<string>
 }
+
+export type Open = {
+  openOk: boolean
+  closeOk: boolean
+  code: Option<number>
+}
