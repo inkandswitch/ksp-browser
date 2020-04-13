@@ -28,11 +28,13 @@ const readLinks = (document: HTMLDocument): protocol.InputLink[] => {
   const links = []
 
   for (const element of elements) {
-    const targetURL = readURL(element.href, baseURL)
-    if (baseURL.href !== targetURL.href) {
+    // Compare against the URL without query params & hash  but
+    // capture actual URL as e.g. stack overflow search would not
+    // land right without it.
+    if (baseURL.href !== readURL(element.href, baseURL).href) {
       links.push({
         kind: protocol.LinkKind.INLINE,
-        targetURL: targetURL.href,
+        targetURL: new URL(element.href, baseURL).href,
         identifier: null,
         name: element.text.trim(),
         title: element.title,
