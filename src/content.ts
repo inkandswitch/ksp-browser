@@ -13,9 +13,16 @@ import {
 import * as Protocol from './protocol'
 import { Program, Context } from './program'
 // No idea why just `from 'lit-html' does not seem to work here.
-import { html, render as renderHTML, nothing } from '../node_modules/lit-html/lit-html'
+import {
+  html,
+  render as renderHTML,
+  nothing,
+  Template,
+  TemplateResult,
+} from '../node_modules/lit-html/lit-html'
 import { stat } from 'fs'
 import { md } from './remark'
+import { map } from './iterable'
 import * as scanner from './scanner'
 
 const onUIMessage = (message: MessageEvent) => {
@@ -167,12 +174,58 @@ const renderBacklinks = (backLinks: Protocol.Link[]) =>
   backLinks.length === 0
     ? nothing
     : html`<h2 class="marked"><span>Backlinks</span></h2>
-        <ul>
-          ${backLinks.map(renderBacklink)}
-        </ul>`
+        ${renderList(groupByReferrer(backLinks), renderLinkGroup, ['backlink'])}`
+
+class Group<a> {
+  first: a
+  rest: a[]
+  constructor(first: a) {
+    this.first = first
+    this.rest = []
+  }
+  add(item: a) {
+    this.rest.push(item)
+  }
+  get size() {
+    return this.rest.length + 1
+  }
+}
+
+const groupByReferrer = (links: Protocol.Link[]) => {
+  const map = new Map()
+  for (const link of links) {
+    const group = map.get(link.referrer.url)
+    if (!group) {
+      map.set(link.referrer.url, new Group(link))
+    } else {
+      group.add(link)
+    }
+  }
+  return map.values()
+}
+
+const renderList = <a>(
+  data: Iterable<a>,
+  view: (data: a) => TemplateResult,
+  classNames: string[]
+): TemplateResult =>
+  html`<ul>
+    <li class="${classNames.join(' ')}">
+      ${map(view, data)}
+    </li>
+  </ul>`
+
+const renderLinkGroup = (group: Group<Protocol.Link>) =>
+  group.size === 1
+    ? html`<section>${renderBacklink(group.first)}</section>`
+    : html`<details
+        ><summary>${renderBacklink(group.first)}</summary>${renderList(group.rest, renderBacklink, [
+          'backlink',
+        ])}</details
+      >`
 
 const renderBacklink = (link: Protocol.Link) =>
-  html`<li class="backlink">
+  html`<section">
     <a target="_blank" title="${link.title}" href="${link.referrer.url}">
       ${link.referrer.info.title || link.referrer.url.split('/').pop()}
     </a>
@@ -181,7 +234,7 @@ const renderBacklink = (link: Protocol.Link) =>
     <p>
       ${md(link.fragment || link.referrer.info.description)}
     </p>
-  </li>`
+  </section>`
 
 const renderReference = (link: Protocol.Link) =>
   link.identifier == null || link.identifier === '' ? nothing : renderReferenceLinkTarget(link)
