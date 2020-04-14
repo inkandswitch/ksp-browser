@@ -173,29 +173,14 @@ const renderBacklinks = (backLinks: Protocol.Link[]) =>
     : html`<h2 class="marked"><span>Backlinks</span></h2>
         ${renderList(groupByReferrer(backLinks), renderLinkGroup, ['backlink'])}`
 
-class Group<a> {
-  first: a
-  rest: a[]
-  constructor(first: a) {
-    this.first = first
-    this.rest = []
-  }
-  add(item: a) {
-    this.rest.push(item)
-  }
-  get size() {
-    return this.rest.length + 1
-  }
-}
-
 const groupByReferrer = (links: Protocol.Link[]) => {
   const map = new Map()
   for (const link of links) {
-    const group = map.get(link.referrer.url)
-    if (!group) {
-      map.set(link.referrer.url, new Group(link))
+    const list = map.get(link.referrer.url)
+    if (!list) {
+      map.set(link.referrer.url, [link])
     } else {
-      group.add(link)
+      map.set(link.referrer.url, [link, ...list])
     }
   }
   return map.values()
@@ -212,14 +197,11 @@ const renderList = <a>(
     </li>
   </ul>`
 
-const renderLinkGroup = (group: Group<Protocol.Link>) =>
-  group.size === 1
-    ? html`<section>${renderBacklink(group.first)}</section>`
-    : html`<details
-        ><summary>${renderBacklink(group.first)}</summary>${renderList(group.rest, renderContext, [
-          'backlink',
-        ])}</details
-      >`
+const renderLinkGroup = (links: Protocol.Link[]) =>
+  html`<details>
+    <summary>${renderBacklink(links[0])}</summary>
+    ${renderList(links, renderContext, ['backlink'])}
+  </details>`
 
 const renderBacklink = (link: Protocol.Link) =>
   html`<section">
@@ -228,7 +210,6 @@ const renderBacklink = (link: Protocol.Link) =>
     </a>
     ${link.referrer.tags.map(({ name }) => html`<a href="#${name}" class="tag">${name}</a>`)}
     ${renderReference(link)}
-    ${renderContext(link)}
   </section>`
 
 const renderContext = (link: Protocol.Link) =>
