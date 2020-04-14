@@ -152,14 +152,11 @@ const render = (state: Model) => {
   switch (state.mode) {
     case Mode.Disabled:
       return nothing
-    case Mode.Enabled:
-      return renderInline(context)
     case Mode.Active:
       return renderPanel(context)
   }
 }
 
-const renderInline = (resource: Protocol.Resource) => renderUI(resource, 'inline')
 const renderPanel = (resource: Protocol.Resource) => renderUI(resource, 'panel')
 
 const renderUI = (resource: Protocol.Resource, mode: string) =>
@@ -219,7 +216,7 @@ const renderLinkGroup = (group: Group<Protocol.Link>) =>
   group.size === 1
     ? html`<section>${renderBacklink(group.first)}</section>`
     : html`<details
-        ><summary>${renderBacklink(group.first)}</summary>${renderList(group.rest, renderBacklink, [
+        ><summary>${renderBacklink(group.first)}</summary>${renderList(group.rest, renderContext, [
           'backlink',
         ])}</details
       >`
@@ -231,10 +228,13 @@ const renderBacklink = (link: Protocol.Link) =>
     </a>
     ${link.referrer.tags.map(({ name }) => html`<a href="#${name}" class="tag">${name}</a>`)}
     ${renderReference(link)}
-    <p>
-      ${md(link.fragment || link.referrer.info.description)}
-    </p>
+    ${renderContext(link)}
   </section>`
+
+const renderContext = (link: Protocol.Link) =>
+  html`<div class="context">
+    ${md(link.fragment || link.referrer.info.description)}
+  </div>`
 
 const renderReference = (link: Protocol.Link) =>
   link.identifier == null || link.identifier === '' ? nothing : renderReferenceLinkTarget(link)

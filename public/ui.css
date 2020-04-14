@@ -43,10 +43,6 @@ aside.panel {
   overflow: auto;
 }
 
-aside.inline {
-  position: relative;
-}
-
 aside {
   font-family: var(--font);
   font-style: var(--font-size);
@@ -73,6 +69,14 @@ li {
 
 li.backlink {
   list-style: none;
+}
+
+.context {
+  font-size: 0.75rem;
+  font-style: italic;
+  text-overflow: ellipsis;
+  margin-left: 1rem;
+  padding-top: 0.25rem;
 }
 
 a {
