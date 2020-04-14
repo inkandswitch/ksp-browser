@@ -91,11 +91,6 @@ const ingest = async (resource: Protocol.InputResource): Promise<ResourceRespons
           tags {
             ...tag
           }
-          links {
-            target{
-              url
-            }
-          }
         }
       }`,
     },
