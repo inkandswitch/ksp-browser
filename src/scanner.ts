@@ -55,7 +55,7 @@ const isSameDocumentURL = (target: URL, source: URL) =>
 const readLinkContext = (link: HTMLAnchorElement): string => {
   const max = 200
   const min = 150
-  let summary = link.text
+  let summary = ` <mark>${link.textContent}</mark>`
   // If link content itself is larger shorten by cutting number of sentences.
   if (summary.length > max) {
     return limitSentences(summary, 1, min, max)
