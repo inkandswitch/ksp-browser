@@ -8,7 +8,7 @@ declare module 'remark' {
     toString(): string
   }
 
-  interface Remark {
+  export interface Remark {
     use<a>(plugin: RemarkPlugin<a>, options: a): Remark
     use<a>(plugin: RemarkPlugin<a>): Remark
 
