@@ -1,32 +1,50 @@
-import { ExtensionInbox, ScriptInbox, ResourceResponse, OpenResponse } from './mailbox'
+import {
+  ExtensionInbox,
+  ScriptInbox,
+  LookupResponse,
+  IngestResponse,
+  OpenResponse,
+} from './mailbox'
 import * as Protocol from './protocol'
 
-const onRequest = async (message: ExtensionInbox, { tab }: chrome.runtime.MessageSender) => {
+const onRequest = async (
+  message: ExtensionInbox,
+  { tab }: chrome.runtime.MessageSender
+): Promise<null | ScriptInbox> => {
   switch (message.type) {
     case 'CloseRequest': {
-      return close()
+      close()
+      return null
     }
     case 'OpenRequest': {
-      return await open(message.url)
+      const result = await open(message.url)
+      return { type: 'OpenResponse', open: result }
     }
-    case 'ResourceRequest': {
+    case 'LookupRequest': {
       chrome.browserAction.disable(tab!.id!)
       chrome.browserAction.setIcon({ path: 'disable-icon-128.png', tabId: tab!.id })
       chrome.browserAction.setBadgeText({ text: ``, tabId: tab!.id })
-      const payload = await ingest(message.resource)
-      const count = payload.response.data.ingest.backLinks.length
+      const resource = await lookup(message.lookup)
+      const count = resource.backLinks.length
       if (count > 0) {
         chrome.browserAction.enable(tab!.id)
         chrome.browserAction.setIcon({ path: 'icon-128.png', tabId: tab!.id })
         chrome.browserAction.setBadgeText({ text: `${count}`, tabId: tab!.id })
       }
 
-      return payload
+      return { type: 'LookupResponse', resource }
+    }
+    case 'IngestRequest': {
+      const result = await ingest(message.resource)
+      return { type: 'IngestResponse', ingest: result }
+    }
+    case 'TagsRequest': {
+      return null
     }
   }
 }
 
-const open = async (url: string): Promise<OpenResponse> =>
+const open = async (url: string): Promise<Protocol.Open> =>
   ksp(
     {
       query: `mutation open {
@@ -39,13 +57,10 @@ const open = async (url: string): Promise<OpenResponse> =>
       operationName: 'open',
       variables: {},
     },
-    (data): OpenResponse => ({
-      type: 'OpenResponse',
-      response: { data },
-    })
+    (data): Protocol.Open => data.open
   )
 
-const ingest = async (resource: Protocol.InputResource): Promise<ResourceResponse> =>
+const ingest = async (resource: Protocol.InputResource): Promise<{ url: string }> =>
   ksp(
     {
       operationName: 'Ingest',
@@ -53,14 +68,20 @@ const ingest = async (resource: Protocol.InputResource): Promise<ResourceRespons
       query: `mutation Ingest($resource:InputResource!) {
         ingest(resource:$resource) {
           url
-          links {
-            target {
-              url
-              backLinks {
-                ...backLink
-              }
-            }
-          }
+        }
+      }`,
+    },
+    (data): { url: string } => data.ingest
+  )
+
+const lookup = async (url: string): Promise<Protocol.Resource> =>
+  ksp(
+    {
+      operationName: 'Lookup',
+      variables: {},
+      query: `query Lookup {
+        resource(url: "${url}") {
+          url
           backLinks {
             ...backLink
           }
@@ -94,7 +115,7 @@ const ingest = async (resource: Protocol.InputResource): Promise<ResourceRespons
         }
       }`,
     },
-    (data) => ({ type: 'ResourceResponse', response: data })
+    (data) => data.resource
   )
 
 const ksp = async <a, b>(input: a, decode: (output: any) => b): Promise<b> => {
@@ -105,8 +126,8 @@ const ksp = async <a, b>(input: a, decode: (output: any) => b): Promise<b> => {
     },
     body: JSON.stringify(input),
   })
-  const data = await request.json()
-  return decode(data)
+  const json = await request.json()
+  return decode(json.data)
 }
 
 const close = () => {}

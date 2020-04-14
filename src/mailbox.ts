@@ -15,17 +15,27 @@ export type OpenRequest = {
 
 export type OpenResponse = {
   type: 'OpenResponse'
-  response: { data: { open: Protocol.Open } }
+  open: Protocol.Open
 }
 
-export type ResourceResponse = {
-  type: 'ResourceResponse'
-  response: { data: { ingest: Protocol.Resource } }
+export type LookupResponse = {
+  type: 'LookupResponse'
+  resource: Protocol.Resource
 }
 
-export type ResourceRequest = {
-  type: 'ResourceRequest'
+export type LookupRequest = {
+  type: 'LookupRequest'
+  lookup: string
+}
+
+export type IngestRequest = {
+  type: 'IngestRequest'
   resource: Protocol.InputResource
+}
+
+export type IngestResponse = {
+  type: 'IngestResponse'
+  ingest: { url: string }
 }
 
 export type TagsRequest = {
@@ -37,9 +47,14 @@ export type TagsResponse = {
   response: { data: { tags: Protocol.Tag[] } }
 }
 
-export type ExtensionInbox = CloseRequest | ResourceRequest | TagsRequest | OpenRequest
+export type ExtensionInbox =
+  | CloseRequest
+  | LookupRequest
+  | IngestRequest
+  | TagsRequest
+  | OpenRequest
 
-export type ScriptInbox = ToggleRequest
+export type ScriptInbox = ToggleRequest | LookupResponse | IngestResponse | OpenResponse
 
 export type UIInbox = CloseRequest
 

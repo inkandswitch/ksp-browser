@@ -5,7 +5,7 @@ import {
   CloseRequest,
   Enable,
   Disable,
-  ResourceResponse,
+  LookupResponse,
   ToggleRequest,
   OpenRequest,
   OpenResponse,
@@ -51,11 +51,11 @@ type Model = {
   resource: null | Protocol.Resource
 }
 
-type Message = Enable | Disable | ResourceResponse | ToggleRequest | OpenRequest | OpenResponse
+type Message = Enable | Disable | OpenRequest | ScriptInbox
 type Address = { tabId: number; frameId: number }
 
 const init = (): [Model, Promise<null | Message>] => {
-  return [{ mode: Mode.Enabled, resource: null }, queryKnowledgeServer()]
+  return [{ mode: Mode.Enabled, resource: null }, lookup()]
 }
 
 const update = (message: Message, state: Model): [Model, null | Promise<null | Message>] => {
@@ -75,8 +75,11 @@ const update = (message: Message, state: Model): [Model, null | Promise<null | M
     case 'OpenResponse': {
       return [state, null]
     }
-    case 'ResourceResponse': {
-      return [setMetadata(state, message.response.data.ingest), null]
+    case 'LookupResponse': {
+      return [setMetadata(state, message.resource), ingest()]
+    }
+    case 'IngestResponse': {
+      return [state, null]
     }
   }
 }
@@ -85,9 +88,25 @@ const setMetadata = (state: Model, resource: Protocol.Resource) => {
   return { ...state, isActive: true, resource }
 }
 
-const queryKnowledgeServer = async (): Promise<Message | null> => {
+const ingest = async (): Promise<Message | null> => {
+  await loaded(document)
   const resource = scanner.read(document)
-  const response = await request({ type: 'ResourceRequest', resource })
+  const response = await request({ type: 'IngestRequest', resource })
+  console.log(response)
+  return response
+}
+
+const loaded = (document: Document) => {
+  if (document.readyState !== 'complete') {
+    return once(document.defaultView!, 'load')
+  }
+}
+
+const once = (target: Node | Window, type: string) =>
+  new Promise((resolve) => target.addEventListener(type, resolve, { once: true }))
+
+const lookup = async (): Promise<Message | null> => {
+  const response = await request({ type: 'LookupRequest', lookup: location.href })
   console.log(response)
   return response
 }
