@@ -1,6 +1,6 @@
 import { RemarkPlugin } from 'remark'
 
 declare module 'remark-unlink' {
-  declare const unlink: RemarkPlugin<void>
+  declare var unlink: RemarkPlugin<void>
   export default unlink
 }

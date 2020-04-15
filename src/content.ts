@@ -111,6 +111,58 @@ const lookup = async (): Promise<Message | null> => {
   return response
 }
 
+const scan = async (): Promise<Message | null> => {
+  await loaded(document)
+  const resource = scanner.read(document)
+  return { type: 'LookupResponse', resource: toOutput(resource) }
+}
+
+const toOutput = (input: Protocol.InputResource): Protocol.Resource => {
+  const info = {
+    cid: null,
+    title: input.title,
+    description: input.description,
+  }
+
+  const resource = {
+    url: input.url,
+    info,
+    links: [],
+    backLinks: !input.links
+      ? []
+      : input.links.map(
+          (link): Protocol.Link => ({
+            kind: link.kind,
+            name: link.name,
+            title: link.title,
+            fragment: link.referrerFragment,
+            location: link.referrerLocation,
+            identifier: '',
+            target: <Protocol.Resource>{
+              url: link.targetURL,
+            },
+            referrer: {
+              url: input.url,
+              info,
+              links: [],
+              backLinks: [],
+              tags: [],
+            },
+          })
+        ),
+    tags: input.tags
+      ? input.tags.map((tag) => ({
+          name: tag.name,
+          fragment: tag.targetFragment,
+          location: tag.targetLocation,
+          target: <Protocol.Resource>{ url: input.url },
+        }))
+      : [],
+  }
+
+  return resource
+}
+
 const open = async (url: string): Promise<Message | null> => request({ type: 'OpenRequest', url })
 
 class UIRequest {
@@ -167,7 +219,7 @@ const getContext = ({ resource }: Model): null | Protocol.Resource => {
 
 const render = (state: Model) => {
   const context = getContext(state)
-  if (!context) return nothing
+  // if (!context) return nothing
   switch (state.mode) {
     case Mode.Disabled:
       return nothing
@@ -176,13 +228,14 @@ const render = (state: Model) => {
   }
 }
 
-const renderPanel = (resource: Protocol.Resource) => renderUI(resource, 'panel')
+const renderInline = (resource: null | Protocol.Resource) => renderUI(resource, 'inline')
+const renderPanel = (resource: null | Protocol.Resource) => renderUI(resource, 'panel')
 
-const renderUI = (resource: Protocol.Resource, mode: string) =>
+const renderUI = (resource: null | Protocol.Resource, mode: string) =>
   html`
     <link rel="stylesheet" href="${chrome.extension.getURL('ui.css')}" />
     <aside class="sans-serif ${mode}">
-      ${renderBacklinks(resource.backLinks)}
+      ${resource ? renderBacklinks(resource.backLinks) : nothing}
     </aside>
   `
 
@@ -218,18 +271,30 @@ const renderList = <a>(
 
 const renderLinkGroup = (links: Protocol.Link[]) =>
   html`<details>
-    <summary>${renderBacklink(links[0])}</summary>
-    ${renderList(links, renderContext, ['backlink'])}
+    <summary>${renderReferrer(links[0])}</summary>
+    ${renderList(links, renderBacklink, ['backlink'])}
   </details>`
+
+const renderReferrer = (link: Protocol.Link) =>
+  html`<a target="_blank" title="${link.title}" href="${link.referrer.url}">
+      ${link.referrer.info.title.trim()}
+    </a>
+    ${renderTags(link.referrer.tags)} ${renderReference(link)}
+    <p>${md(link.referrer.info.description)}</p>`
+
+const renderTags = (tags: Protocol.Tag[]) =>
+  tags.map(({ name }) => html`<a href="#${name}" class="tag">${name}</a>`)
 
 const renderBacklink = (link: Protocol.Link) =>
   html`<section">
-    <a target="_blank" title="${link.title}" href="${link.referrer.url}">
-      ${link.referrer.info.title || link.referrer.url.split('/').pop()}
-    </a>
-    ${link.referrer.tags.map(({ name }) => html`<a href="#${name}" class="tag">${name}</a>`)}
-    ${renderReference(link)}
+    ${renderTags(link.referrer.tags)}
+    ${md(linkedFragment(link))}
   </section>`
+
+const linkedFragment = (link: Protocol.Link): string =>
+  link.identifier
+    ? `${link.fragment || ''}\n[${link.identifier}]:${link.referrer.url}`
+    : link.fragment || ''
 
 const renderContext = (link: Protocol.Link) =>
   html`<div class="context">
