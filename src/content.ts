@@ -220,32 +220,34 @@ const view = (context: Context<Model>) => {
   }
 }
 
-const getContext = ({ resource }: Model): null | Protocol.Resource => {
+const isEmptyResource = (resource: null | Protocol.Resource): boolean => {
   if (resource && (resource.backLinks.length > 0 || resource.tags.length > 0)) {
-    return resource
+    return false
   } else {
-    return null
+    return true
   }
 }
 
 const render = (state: Model) => {
-  const context = getContext(state)
-  // if (!context) return nothing
   switch (state.mode) {
     case Mode.Disabled:
-      return nothing
+      return renderDisabled(state.resource)
+    case Mode.Enabled:
+      return renderDisabled(state.resource)
     case Mode.Active:
-      return renderPanel(context)
+      return renderActive(state.resource)
   }
 }
 
+const renderDisabled = (resource: null | Protocol.Resource) => renderUI(resource, 'disabled')
 const renderInline = (resource: null | Protocol.Resource) => renderUI(resource, 'inline')
-const renderPanel = (resource: null | Protocol.Resource) => renderUI(resource, 'panel')
+const renderActive = (resource: null | Protocol.Resource) => renderUI(resource, 'active')
 
 const renderUI = (resource: null | Protocol.Resource, mode: string) =>
   html`
     <link rel="stylesheet" href="${chrome.extension.getURL('ui.css')}" />
-    <aside class="sans-serif ${mode}">
+    ${renderThumb(resource)}
+    <aside class="panel sans-serif ${mode}" open>
       ${resource ? renderBacklinks(resource.backLinks) : nothing}
     </aside>
   `
@@ -321,13 +323,10 @@ const renderReferenceLinkTarget = (link: Protocol.Link) =>
       ${link.identifier}
     </a>`
 
-const renderStatus = (resource: Protocol.Resource) => html`<dialog class="notification">
-  <input id="hotswap" type="checkbox" checked />
-  <form>
-    <label class="version" for="hotswap">${resource.backLinks.length}</label>
-    <label class="status">&nbsp;</label>
-  </form>
-</dialog>`
+const renderThumb = (resource: null | Protocol.Resource) =>
+  html`<button
+    class="thumb ${isEmptyResource(resource) ? 'disabled' : resource ? 'show' : 'hide'}"
+  ></button>`
 
 const onEvent = (event: Event): Message | null => {
   switch (event.type) {

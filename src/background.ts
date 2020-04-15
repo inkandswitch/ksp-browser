@@ -21,15 +21,15 @@ const onRequest = async (
       return { type: 'OpenResponse', open: result }
     }
     case 'LookupRequest': {
-      chrome.browserAction.disable(tab!.id!)
-      chrome.browserAction.setIcon({ path: 'disable-icon-128.png', tabId: tab!.id })
-      chrome.browserAction.setBadgeText({ text: ``, tabId: tab!.id })
+      // chrome.browserAction.disable(tab!.id!)
+      // chrome.browserAction.setIcon({ path: 'icon-off.png', tabId: tab!.id })
+      // chrome.browserAction.setBadgeText({ text: ``, tabId: tab!.id })
       const resource = await lookup(message.lookup)
       const count = resource.backLinks.length
       if (count > 0) {
-        chrome.browserAction.enable(tab!.id)
-        chrome.browserAction.setIcon({ path: 'icon-128.png', tabId: tab!.id })
-        chrome.browserAction.setBadgeText({ text: `${count}`, tabId: tab!.id })
+        // chrome.browserAction.enable(tab!.id)
+        // chrome.browserAction.setIcon({ path: 'icon-on.png', tabId: tab!.id })
+        // chrome.browserAction.setBadgeText({ text: `${count}`, tabId: tab!.id })
       }
 
       return { type: 'LookupResponse', resource }
@@ -222,8 +222,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // chrome.browserAction.onClicked.addListener(onBrowserAction)
 // chrome.contextMenus.onClicked.addListener(onContextMenuAction)
 
-chrome.browserAction.disable()
-chrome.browserAction.setIcon({ path: 'disable-icon-128.png' })
-chrome.browserAction.setBadgeBackgroundColor({ color: '#000' })
+// chrome.browserAction.disable()
+// chrome.browserAction.setIcon({ path: 'icon-off.png' })
+// chrome.browserAction.setBadgeBackgroundColor({ color: '#000' })
 chrome.browserAction.onClicked.addListener((tab) => sendAgentMessage(tab, { type: 'Toggle' }))
 chrome.commands.onCommand.addListener(<(command: string) => void>onCommand)
