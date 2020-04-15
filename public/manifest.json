@@ -23,10 +23,19 @@
     }
   },
   "commands": {
-    "_execute_browser_action": {
+    "inspect-links": {
       "suggested_key": {
-        "default": "Ctrl+Shift+X"
-      }
+        "default": "Ctrl+Shift+I",
+        "mac": "Command+Shift+I"
+      },
+      "description": "Inspect links"
+    },
+    "toggle-panel": {
+      "suggested_key": {
+        "default": "Ctrl+B",
+        "mac": "Command+B"
+      },
+      "description": "Toggles context plane"
     }
   },
   "manifest_version": 2

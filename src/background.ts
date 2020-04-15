@@ -44,6 +44,37 @@ const onRequest = async (
   }
 }
 
+enum Command {
+  InspectLinks = 'inspect-links',
+  TogglePanel = 'toggle-panel',
+}
+
+const onCommand = (command: Command): void => {
+  switch (command) {
+    case Command.InspectLinks:
+      return void inspectLinks()
+    case Command.TogglePanel:
+      return void togglePanel()
+  }
+}
+
+const inspectLinks = async () => {
+  const tab = await getSelectedTab()
+  if (tab) {
+    sendAgentMessage(tab, { type: 'InspectLinksRequest' })
+  }
+}
+
+const togglePanel = async () => {
+  const tab = await getSelectedTab()
+  if (tab) {
+    sendAgentMessage(tab, { type: 'Toggle' })
+  }
+}
+
+const getSelectedTab = (): Promise<chrome.tabs.Tab | null> =>
+  new Promise((resolve) => chrome.tabs.getSelected(resolve))
+
 const open = async (url: string): Promise<Protocol.Open> =>
   ksp(
     {
@@ -178,6 +209,9 @@ const request = <a, b>(tabId: number, message: a): Promise<b> =>
     })
   })
 
+const sendAgentMessage = (tab: chrome.tabs.Tab, message: ScriptInbox) =>
+  chrome.tabs.sendMessage(tab.id!, message)
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   let response = onRequest(request, sender)
   if (response) {
@@ -191,6 +225,5 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 chrome.browserAction.disable()
 chrome.browserAction.setIcon({ path: 'disable-icon-128.png' })
 chrome.browserAction.setBadgeBackgroundColor({ color: '#000' })
-chrome.browserAction.onClicked.addListener((tab) => {
-  chrome.tabs.sendMessage(tab.id!, { type: 'Toggle' })
-})
+chrome.browserAction.onClicked.addListener((tab) => sendAgentMessage(tab, { type: 'Toggle' }))
+chrome.commands.onCommand.addListener(<(command: string) => void>onCommand)
