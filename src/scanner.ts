@@ -50,59 +50,101 @@ const readLinks = (document: HTMLDocument): protocol.InputLink[] => {
 const isSameDocumentURL = (target: URL, source: URL) =>
   target.origin === source.origin && target.pathname === source.pathname
 
-// Twitter web card metadata for description is limited to 200 characters, which is why
-// we aim to capture summary in 150 - 200 character range.
 const readLinkContext = (link: HTMLAnchorElement): string => {
-  const max = 200
-  const min = 150
-  let summary = ` <mark>${link.textContent}</mark>`
-  // If link content itself is larger shorten by cutting number of sentences.
-  if (summary.length > max) {
-    return limitSentences(summary, 1, min, max)
+  let text = `[${link.text}](${link.href} ${JSON.stringify(link.title)})`
+
+  for (const element of iterateNodes(link, previousInlineSibling, getInlineParent)) {
+    const textContent = element.textContent || ''
+    text = `${content(element)}${text}`
   }
-  // If too short then get some content from siblings.
-  else {
-    let pre = iterateSentences(link, -1)
-    let post = iterateSentences(link, 1)
-    let preDone = false
-    let postDone = false
 
-    while ((!preDone || !postDone) && summary.length < min) {
-      if (!preDone) {
-        let { value, done } = pre.next()
-        if (done) {
-          preDone = true
-        } else {
-          if (summary.length + value.length < max) {
-            summary = `${value}${summary}`
-          } else {
-            preDone = true
-          }
-        }
-      }
+  for (const element of iterateNodes(link, nextInlineSibling, getInlineParent)) {
+    text = `${text}${content(element)}`
+  }
 
-      if (!postDone) {
-        let { value, done } = post.next()
-        if (done) {
-          postDone = true
-        } else {
-          if (summary.length + value.length < max) {
-            summary = `${summary}${value}`
-          } else {
-            postDone = true
-          }
-        }
-      }
-    }
+  // get rid duplicate whitespaces
+  return text.trim().replace(/\s{2}/g, '')
+}
 
-    return summary
+const content = (node: Node) => {
+  const text = node.textContent || ''
+  return (<Element>node).tagName === 'CODE' && text.length > 0 ? `\`${text}\`` : text
+}
+
+const INLINE_ELEMENTS = new Set([
+  'A',
+  'ABBR',
+  'ACRONYM',
+  'AUDIO',
+  'B',
+  'BDI',
+  'BDO',
+  'BIG',
+  'BR',
+  'BUTTON',
+  'CANVAS',
+  'CITE',
+  'CODE',
+  'DATA',
+  'DATALIST',
+  'DEL',
+  'DFN',
+  'EM',
+  'EMBED',
+  'I',
+  'IFRAME',
+  'IMG',
+  'INPUT',
+  'INS',
+  'KBD',
+  'LABEL',
+  'MAP',
+  'MARK',
+  'METER',
+  'NOSCRIPT',
+  'OBJECT',
+  'OUTPUT',
+  'PICTURE',
+  'PROGRESS',
+  'Q',
+  'RUBY',
+  'S',
+  'SAMP',
+  'SCRIPT',
+  'SELECT',
+  'SLOT',
+  'SMALL',
+  'SPAN',
+  'STRONG',
+  'SUB',
+  'SUP',
+  'SVG',
+  'TEMPLATE',
+  'TEXTAREA',
+  'TIME',
+  'U',
+  'TT',
+  'VAR',
+  'VIDEO',
+  'WBR',
+])
+const getInlineParent = (node: Node): Node | null => toInlineNode(node.parentElement)
+
+const previousInlineSibling = (node: Node) => toInlineNode(node.previousSibling)
+const nextInlineSibling = (node: Node) => toInlineNode(node.nextSibling)
+const toInlineNode = (node: null | Node): Node | null => {
+  if (node && (node.nodeType === Node.TEXT_NODE || INLINE_ELEMENTS.has((<Element>node).tagName))) {
+    return node
+  } else {
+    return null
   }
 }
 
-const previousSibling = (node: Node) => node.previousSibling
-const nextSibling = (node: Node) => node.nextSibling
-
-let iterateNodes = function* (node: Node, next: (node: Node) => Node | null): Iterable<Node> {
+let iterateNodes = function* (
+  node: Node,
+  next: (node: Node) => Node | null,
+  parent: (node: Node) => Node | null
+): Iterable<Node> {
   let target: Node | null = node
   while (target) {
     let sibling = next(target)
@@ -110,61 +152,6 @@ let iterateNodes = function* (node: Node, next: (node: Node) => Node | null): It
       yield sibling
       sibling = next(sibling)
     }
-    target = target.parentElement
-  }
-}
-
-let iterateSentences = function* (node: Node, direction: -1 | 1): Iterator<string> {
-  const nodes =
-    direction > 0 ? iterateNodes(node, nextSibling) : iterateNodes(node, previousSibling)
-  for (const node of nodes) {
-    const content = node.textContent || ''
-    let text = content.trim()
-    if (text[0] != content[0]) {
-      text = `${content[0]}${text}`
-    }
-    if (text[text.length - 1] != content[content.length - 1]) {
-      text = `${text}${content[content.length - 1]}`
-    }
-
-    const sentences = text.split('.')
-    const count = sentences.length
-    if (count === 1) {
-      yield text
-    } else {
-      let index = direction > 0 ? 0 : sentences.length - 1
-      while (index >= 0 && index < count) {
-        yield `${sentences[index]}.`
-        index += direction
-      }
-    }
-  }
-}
-
-const limitSentences = (input: string, direction: 1 | -1, min: number, max: number): string => {
-  const sentences = input.split('.')
-  let index = direction > 0 ? 0 : sentences.length - 1
-  let text = sentences[index]
-  index += direction
-  while (text.length < min && index < sentences.length && index > 0) {
-    const sentence = sentences[index]
-    text = direction > 0 ? `${text}.${sentence}` : `${sentence}.${text}`
-    index += 1
-  }
-
-  while (text.length < max && index < sentences.length && index > 0) {
-    const sentence = sentences[index]
-    if (text.length + sentence.length + 1 > max) {
-      return text
-    } else {
-      text = direction > 0 ? `${text}.${sentence}` : `${sentence}.${text}`
-    }
-    index += 1
-  }
-
-  if (text.length > max) {
-    return `${text.slice(0, max - 1)}…`
-  } else {
-    return text
+    target = parent(target)
   }
 }
