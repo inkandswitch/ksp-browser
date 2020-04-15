@@ -220,7 +220,7 @@ const view = (context: Context<Model>) => {
   }
 }
 
-const isEmptyResource = (resource: null | Protocol.Resource): boolean => {
+const isEmptyResource = (resource: Protocol.Resource): boolean => {
   if (resource && (resource.backLinks.length > 0 || resource.tags.length > 0)) {
     return false
   } else {
@@ -325,7 +325,7 @@ const renderReferenceLinkTarget = (link: Protocol.Link) =>
 
 const renderThumb = (resource: null | Protocol.Resource) =>
   html`<button
-    class="thumb ${isEmptyResource(resource) ? 'disabled' : resource ? 'show' : 'hide'}"
+    class="thumb ${!resource ? 'hide' : isEmptyResource(resource) ? 'disabled' : 'show'}"
   ></button>`
 
 const onEvent = (event: Event): Message | null => {
