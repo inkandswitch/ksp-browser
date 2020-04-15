@@ -7,6 +7,7 @@ import {
   Disable,
   LookupResponse,
   ToggleRequest,
+  InspectLinksResponse,
   OpenRequest,
   OpenResponse,
 } from './mailbox'
@@ -51,7 +52,7 @@ type Model = {
   resource: null | Protocol.Resource
 }
 
-type Message = Enable | Disable | OpenRequest | ScriptInbox
+type Message = Enable | Disable | OpenRequest | InspectLinksResponse | ScriptInbox
 type Address = { tabId: number; frameId: number }
 
 const init = (): [Model, Promise<null | Message>] => {
@@ -69,6 +70,12 @@ const update = (message: Message, state: Model): [Model, null | Promise<null | M
     case 'Toggle': {
       return [toggle(state), null]
     }
+    case 'InspectLinksRequest': {
+      return [state, scan()]
+    }
+    case 'InspectLinksResponse': {
+      return [inspectLocalLinks(state, message.resource), null]
+    }
     case 'OpenRequest': {
       return [state, open(message.url)]
     }
@@ -85,7 +92,11 @@ const update = (message: Message, state: Model): [Model, null | Promise<null | M
 }
 
 const setMetadata = (state: Model, resource: Protocol.Resource) => {
-  return { ...state, isActive: true, resource }
+  return { ...state, resource }
+}
+
+const inspectLocalLinks = (state: Model, resource: Protocol.Resource) => {
+  return { ...state, mode: Mode.Active, resource }
 }
 
 const ingest = async (): Promise<Message | null> => {
@@ -114,7 +125,7 @@ const lookup = async (): Promise<Message | null> => {
 const scan = async (): Promise<Message | null> => {
   await loaded(document)
   const resource = scanner.read(document)
-  return { type: 'LookupResponse', resource: toOutput(resource) }
+  return { type: 'InspectLinksResponse', resource: toOutput(resource) }
 }
 
 const toOutput = (input: Protocol.InputResource): Protocol.Resource => {

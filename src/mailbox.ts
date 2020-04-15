@@ -8,6 +8,15 @@ export type ToggleRequest = {
   type: 'Toggle'
 }
 
+export type InspectLinksRequest = {
+  type: 'InspectLinksRequest'
+}
+
+export type InspectLinksResponse = {
+  type: 'InspectLinksResponse'
+  resource: Protocol.Resource
+}
+
 export type OpenRequest = {
   type: 'OpenRequest'
   url: string
@@ -54,7 +63,12 @@ export type ExtensionInbox =
   | TagsRequest
   | OpenRequest
 
-export type ScriptInbox = ToggleRequest | LookupResponse | IngestResponse | OpenResponse
+export type ScriptInbox =
+  | ToggleRequest
+  | LookupResponse
+  | IngestResponse
+  | OpenResponse
+  | InspectLinksRequest
 
 export type UIInbox = CloseRequest
 
