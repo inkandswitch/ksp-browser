@@ -28,9 +28,7 @@ const viewList = <a>(
   classNames: string[]
 ): TemplateResult =>
   html`<ul>
-    <li class="${classNames.join(' ')}">
-      ${map(view, data)}
-    </li>
+    ${map((a) => html`<li class="${classNames.join(' ')}">${view(a)}</li>`, data)}
   </ul>`
 
 const viewLinkGroup = (links: Link[]) =>
