@@ -8,7 +8,7 @@ type Model = {
 
 export const view = ({ resource }: Model) => {
   const mode = !resource ? 'hide' : isEmpty(resource) ? 'disabled' : 'show'
-  html`<button class="thumb ${mode}"></button>`
+  return html`<button class="thumb ${mode}"></button>`
 }
 
 const isEmpty = ({ backLinks, tags }: Resource): boolean => {

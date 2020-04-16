@@ -48,8 +48,7 @@ const close = () => {
 
 type Model = {
   mode: Mode
-  hoveredURL: null | string
-  sibLinks: null | Map<string, { links: Protocol.Link[]; tags: Protocol.Tag[] }>
+  siblinks: Siblinks.Model
   resource: null | Protocol.Resource
 }
 
@@ -57,7 +56,7 @@ type Message = AgentInbox | AgentMessage
 type Address = { tabId: number; frameId: number }
 
 const init = (): [Model, Promise<null | Message>] => {
-  return [{ mode: Mode.Enabled, resource: null, sibLinks: null, hoveredURL: null }, lookup()]
+  return [{ mode: Mode.Enabled, resource: null, siblinks: Siblinks.init() }, lookup()]
 }
 
 const update = (message: Message, state: Model): [Model, null | Promise<null | Message>] => {
@@ -87,7 +86,7 @@ const update = (message: Message, state: Model): [Model, null | Promise<null | M
       return [setMetadata(state, message.resource), ingest()]
     }
     case 'IngestResponse': {
-      return [setSiblinks(state, message.ingest.sibLinks), null]
+      return [setIngested(state, message.ingest), null]
     }
     case 'LinkHover': {
       return [setHoveredLink(state, message.url), null]
@@ -96,21 +95,11 @@ const update = (message: Message, state: Model): [Model, null | Promise<null | M
 }
 
 const setHoveredLink = (state: Model, url: null | string) => {
-  return { ...state, hoveredURL: url }
+  return { ...state, siblinks: Siblinks.hover(state.siblinks, url) }
 }
 
-const setSiblinks = (state: Model, sibLinks: Protocol.SibLink[]) => {
-  let url = document.URL
-  let map = new Map()
-  for (const { target } of sibLinks) {
-    const links = target.backLinks.filter((link) => link.referrer.url !== url)
-    const tags = target.tags
-    if (links.length > 0 || tags.length > 0) {
-      map.set(target.url, { links, tags })
-    }
-  }
-
-  return { ...state, sibLinks: map }
+const setIngested = (state: Model, ingested: Protocol.Ingest) => {
+  return { ...state, siblinks: Siblinks.ingested(state.siblinks, ingested) }
 }
 
 const setMetadata = (state: Model, resource: Protocol.Resource) => {
@@ -249,7 +238,7 @@ const view = (context: Context<Model>) => {
 const render = (state: Model) =>
   html`
     <link rel="stylesheet" href="${chrome.extension.getURL('ui.css')}" />
-    ${Thumb.view(state)} ${Backlinks.view(state)} ${Siblinks.view(state)}
+    ${Thumb.view(state)} ${Backlinks.view(state)} ${Siblinks.view(state.siblinks)}
   `
 
 const onEvent = (event: Event): Message | null => {
