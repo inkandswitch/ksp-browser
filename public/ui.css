@@ -53,7 +53,7 @@
   min-height: 10vh;
   position: fixed;
   display: flex;
-  z-index: 99999998;
+  z-index: 99999999;
   left: 0;
   bottom: calc(-50vh + 2px);
   font-family: var(--font);
@@ -121,7 +121,7 @@ a:hover {
 
 .thumb {
   position: fixed;
-  z-index: 99999999;
+  z-index: 99999998;
   width: 44px;
   height: auto;
   overflow: hidden;

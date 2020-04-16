@@ -8,6 +8,11 @@ export type ToggleRequest = {
   type: 'Toggle'
 }
 
+export type LinkHover = {
+  type: 'LinkHover'
+  url: string | null
+}
+
 export type InspectLinksRequest = {
   type: 'InspectLinksRequest'
 }
@@ -44,7 +49,7 @@ export type IngestRequest = {
 
 export type IngestResponse = {
   type: 'IngestResponse'
-  ingest: { url: string }
+  ingest: Protocol.Ingest
 }
 
 export type TagsRequest = {
@@ -63,12 +68,14 @@ export type ExtensionInbox =
   | TagsRequest
   | OpenRequest
 
-export type ScriptInbox =
+export type AgentInbox =
   | ToggleRequest
   | LookupResponse
   | IngestResponse
   | OpenResponse
   | InspectLinksRequest
+
+export type AgentMessage = Enable | Disable | OpenRequest | InspectLinksResponse | LinkHover
 
 export type UIInbox = CloseRequest
 
