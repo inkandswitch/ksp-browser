@@ -1,16 +1,10 @@
-import {
-  ExtensionInbox,
-  ScriptInbox,
-  LookupResponse,
-  IngestResponse,
-  OpenResponse,
-} from './mailbox'
+import { ExtensionInbox, AgentInbox, LookupResponse, IngestResponse, OpenResponse } from './mailbox'
 import * as Protocol from './protocol'
 
 const onRequest = async (
   message: ExtensionInbox,
   { tab }: chrome.runtime.MessageSender
-): Promise<null | ScriptInbox> => {
+): Promise<null | AgentInbox> => {
   switch (message.type) {
     case 'CloseRequest': {
       close()
@@ -35,8 +29,8 @@ const onRequest = async (
       return { type: 'LookupResponse', resource }
     }
     case 'IngestRequest': {
-      const result = await ingest(message.resource)
-      return { type: 'IngestResponse', ingest: result }
+      const output = await ingest(message.resource)
+      return { type: 'IngestResponse', ingest: output }
     }
     case 'TagsRequest': {
       return null
@@ -91,18 +85,56 @@ const open = async (url: string): Promise<Protocol.Open> =>
     (data): Protocol.Open => data.open
   )
 
-const ingest = async (resource: Protocol.InputResource): Promise<{ url: string }> =>
+const ingest = async (resource: Protocol.InputResource): Promise<Protocol.Ingest> =>
   ksp(
     {
       operationName: 'Ingest',
       variables: { resource },
       query: `mutation Ingest($resource:InputResource!) {
         ingest(resource:$resource) {
-          url
+            sibLinks: links {
+              ...sibLink
+            }
+          }
         }
-      }`,
+
+        fragment sibLink on Link {
+          target {
+            url
+            backLinks {
+              ...backLink
+            }
+            tags {
+              ...tag
+            }
+          }
+        }
+
+        fragment tag on Tag {
+          name
+        }
+
+        fragment backLink on Link {
+          kind
+          identifier
+          name
+          title
+          fragment
+          location
+          referrer {
+            url
+            info {
+              title
+              description
+              cid
+            }
+            tags {
+              ...tag
+            }
+          }
+        }`,
     },
-    (data): { url: string } => data.ingest
+    (data) => data.ingest
   )
 
 const lookup = async (url: string): Promise<Protocol.Resource> =>
@@ -209,7 +241,7 @@ const request = <a, b>(tabId: number, message: a): Promise<b> =>
     })
   })
 
-const sendAgentMessage = (tab: chrome.tabs.Tab, message: ScriptInbox) =>
+const sendAgentMessage = (tab: chrome.tabs.Tab, message: AgentInbox) =>
   chrome.tabs.sendMessage(tab.id!, message)
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {

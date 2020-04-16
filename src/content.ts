@@ -1,6 +1,7 @@
 import {
   ExtensionInbox,
-  ScriptInbox,
+  AgentInbox,
+  AgentMessage,
   UIInbox,
   CloseRequest,
   Enable,
@@ -25,6 +26,10 @@ import { stat } from 'fs'
 import { md } from './remark'
 import { map } from './iterable'
 import * as scanner from './scanner'
+import * as Siblinks from './siblinks'
+import * as Backlinks from './backlinks'
+import * as Thumb from './thumb'
+import { Mode } from './mode'
 
 const onUIMessage = (message: MessageEvent) => {
   switch (message.type) {
@@ -41,22 +46,18 @@ const close = () => {
   }
 }
 
-enum Mode {
-  Active,
-  Enabled,
-  Disabled,
-}
-
 type Model = {
   mode: Mode
+  hoveredURL: null | string
+  sibLinks: null | Map<string, { links: Protocol.Link[]; tags: Protocol.Tag[] }>
   resource: null | Protocol.Resource
 }
 
-type Message = Enable | Disable | OpenRequest | InspectLinksResponse | ScriptInbox
+type Message = AgentInbox | AgentMessage
 type Address = { tabId: number; frameId: number }
 
 const init = (): [Model, Promise<null | Message>] => {
-  return [{ mode: Mode.Enabled, resource: null }, lookup()]
+  return [{ mode: Mode.Enabled, resource: null, sibLinks: null, hoveredURL: null }, lookup()]
 }
 
 const update = (message: Message, state: Model): [Model, null | Promise<null | Message>] => {
@@ -86,9 +87,30 @@ const update = (message: Message, state: Model): [Model, null | Promise<null | M
       return [setMetadata(state, message.resource), ingest()]
     }
     case 'IngestResponse': {
-      return [state, null]
+      return [setSiblinks(state, message.ingest.sibLinks), null]
+    }
+    case 'LinkHover': {
+      return [setHoveredLink(state, message.url), null]
     }
   }
+}
+
+const setHoveredLink = (state: Model, url: null | string) => {
+  return { ...state, hoveredURL: url }
+}
+
+const setSiblinks = (state: Model, sibLinks: Protocol.SibLink[]) => {
+  let url = document.URL
+  let map = new Map()
+  for (const { target } of sibLinks) {
+    const links = target.backLinks.filter((link) => link.referrer.url !== url)
+    const tags = target.tags
+    if (links.length > 0 || tags.length > 0) {
+      map.set(target.url, { links, tags })
+    }
+  }
+
+  return { ...state, sibLinks: map }
 }
 
 const setMetadata = (state: Model, resource: Protocol.Resource) => {
@@ -210,128 +232,36 @@ const toggle = (state: Model): Model => {
 const view = (context: Context<Model>) => {
   const view = document.querySelector('cont-ext')
   if (!view) {
-    const view = document.createElement('cont-ext')
+    const view = <HTMLElement & { program: Context<Model> }>document.createElement('cont-ext')
     let shadowRoot = view.attachShadow({ mode: 'open' })
     renderHTML(render(context.state), shadowRoot)
     document.documentElement.appendChild(view)
-    shadowRoot.addEventListener('click', context)
+    shadowRoot.addEventListener('click', context, { passive: true })
+    document.addEventListener('mouseover', context, { passive: true })
+    document.addEventListener('mouseout', context, { passive: true })
+
+    view.program = context
   } else {
     renderHTML(render(context.state), view.shadowRoot!)
   }
 }
 
-const isEmptyResource = (resource: Protocol.Resource): boolean => {
-  if (resource && (resource.backLinks.length > 0 || resource.tags.length > 0)) {
-    return false
-  } else {
-    return true
-  }
-}
-
-const render = (state: Model) => {
-  switch (state.mode) {
-    case Mode.Disabled:
-      return renderDisabled(state.resource)
-    case Mode.Enabled:
-      return renderDisabled(state.resource)
-    case Mode.Active:
-      return renderActive(state.resource)
-  }
-}
-
-const renderDisabled = (resource: null | Protocol.Resource) => renderUI(resource, 'disabled')
-const renderInline = (resource: null | Protocol.Resource) => renderUI(resource, 'inline')
-const renderActive = (resource: null | Protocol.Resource) => renderUI(resource, 'active')
-
-const renderUI = (resource: null | Protocol.Resource, mode: string) =>
+const render = (state: Model) =>
   html`
     <link rel="stylesheet" href="${chrome.extension.getURL('ui.css')}" />
-    ${renderThumb(resource)}
-    <aside class="panel sans-serif ${mode}" open>
-      ${resource ? renderBacklinks(resource.backLinks) : nothing}
-    </aside>
+    ${Thumb.view(state)} ${Backlinks.view(state)} ${Siblinks.view(state)}
   `
-
-const renderBacklinks = (backLinks: Protocol.Link[]) =>
-  backLinks.length === 0
-    ? nothing
-    : html`<h2 class="marked"><span>Backlinks</span></h2>
-        ${renderList(groupByReferrer(backLinks), renderLinkGroup, ['backlink'])}`
-
-const groupByReferrer = (links: Protocol.Link[]) => {
-  const map = new Map()
-  for (const link of links) {
-    const list = map.get(link.referrer.url)
-    if (!list) {
-      map.set(link.referrer.url, [link])
-    } else {
-      map.set(link.referrer.url, [link, ...list])
-    }
-  }
-  return map.values()
-}
-
-const renderList = <a>(
-  data: Iterable<a>,
-  view: (data: a) => TemplateResult,
-  classNames: string[]
-): TemplateResult =>
-  html`<ul>
-    <li class="${classNames.join(' ')}">
-      ${map(view, data)}
-    </li>
-  </ul>`
-
-const renderLinkGroup = (links: Protocol.Link[]) =>
-  html`<details>
-    <summary>${renderReferrer(links[0])}</summary>
-    ${renderList(links, renderBacklink, ['backlink'])}
-  </details>`
-
-const renderReferrer = (link: Protocol.Link) =>
-  html`<a target="_blank" title="${link.title}" href="${link.referrer.url}">
-      ${link.referrer.info.title.trim()}
-    </a>
-    ${renderTags(link.referrer.tags)} ${renderReference(link)}
-    <p>${md(link.referrer.info.description)}</p>`
-
-const renderTags = (tags: Protocol.Tag[]) =>
-  tags.map(({ name }) => html`<a href="#${name}" class="tag">${name}</a>`)
-
-const renderBacklink = (link: Protocol.Link) =>
-  html`<section">
-    ${renderTags(link.referrer.tags)}
-    ${md(linkedFragment(link))}
-  </section>`
-
-const linkedFragment = (link: Protocol.Link): string =>
-  link.identifier
-    ? `${link.fragment || ''}\n[${link.identifier}]:${link.referrer.url}`
-    : link.fragment || ''
-
-const renderContext = (link: Protocol.Link) =>
-  html`<div class="context">
-    ${md(link.fragment || link.referrer.info.description)}
-  </div>`
-
-const renderReference = (link: Protocol.Link) =>
-  link.identifier == null || link.identifier === '' ? nothing : renderReferenceLinkTarget(link)
-
-const renderReferenceLinkTarget = (link: Protocol.Link) =>
-  html`→
-    <a target="_blank" href="${chrome.extension.getURL('ui.html')}#${link.identifier}">
-      ${link.identifier}
-    </a>`
-
-const renderThumb = (resource: null | Protocol.Resource) =>
-  html`<button
-    class="thumb ${!resource ? 'hide' : isEmptyResource(resource) ? 'disabled' : 'show'}"
-  ></button>`
 
 const onEvent = (event: Event): Message | null => {
   switch (event.type) {
     case 'click': {
       return onClick(<MouseEvent>event)
+    }
+    case 'mouseover': {
+      return onMouseOver(<MouseEvent>event)
+    }
+    case 'mouseout': {
+      return onMouseOut(<MouseEvent>event)
     }
     default: {
       return null
@@ -353,6 +283,24 @@ const onClick = (event: MouseEvent): Message | null => {
   return null
 }
 
+const onMouseOver = (event: MouseEvent): Message | null => {
+  const target = <HTMLElement>event.target
+  if (target.localName === 'a') {
+    const anchor = <HTMLAnchorElement>target
+    return { type: 'LinkHover', url: anchor.href }
+  }
+  return null
+}
+
+const onMouseOut = (event: MouseEvent): Message | null => {
+  const target = <HTMLElement>event.target
+  if (target.localName === 'a') {
+    const anchor = <HTMLAnchorElement>target
+    return { type: 'LinkHover', url: null }
+  }
+  return null
+}
+
 const onload = async () => {
   const program = Program.ui(
     {
@@ -370,7 +318,7 @@ const onload = async () => {
     program.send({ type: 'Disable' })
   }
 
-  const onExtensionMessage = (message: ScriptInbox) => program.send(message)
+  const onExtensionMessage = (message: AgentInbox) => program.send(message)
   chrome.runtime.onMessage.addListener(onExtensionMessage)
 }
 

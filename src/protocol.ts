@@ -73,3 +73,16 @@ export type Open = {
   closeOk: boolean
   code: Option<number>
 }
+
+export type Ingest = {
+  url: string
+  sibLinks: SibLink[]
+}
+
+export type SibLink = {
+  target: {
+    url: string
+    backLinks: Link[]
+    tags: Tag[]
+  }
+}
