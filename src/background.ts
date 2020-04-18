@@ -127,6 +127,8 @@ const ingest = async (resource: Protocol.InputResource): Promise<Protocol.Ingest
               title
               description
               cid
+              icon
+              image
             }
             tags {
               ...tag
@@ -171,6 +173,8 @@ const lookup = async (url: string): Promise<Protocol.Resource> =>
             title
             description
             cid
+            icon
+            image
           }
           tags {
             ...tag
