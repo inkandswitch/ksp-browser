@@ -6,7 +6,9 @@ export enum LinkKind {
 export type ResourceInfo = {
   title: string
   description: string
-  cid: string | null | void
+  cid: Option<string>
+  icon: Option<string>
+  image: Option<string>
 }
 
 export type Resource = {
@@ -44,6 +46,8 @@ export type Vec<t> = t[]
 export type InputResource = {
   url: string
   cid: Option<string>
+  icon: Option<string>
+  image: Option<string>
   title: string
   description: string
   links: Option<Vec<InputLink>>

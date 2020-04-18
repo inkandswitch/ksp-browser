@@ -3,7 +3,7 @@ import { first, reduce, concat, filter, map, take } from './iterable'
 export type ScrapeData = {
   url: string
   icon: string | null
-  hero: string[]
+  image: string | null
   title: string
   description: string
   name: string
@@ -57,7 +57,7 @@ export const clipSummary = (document: Document): ScrapeData => {
   return {
     url: document.URL,
     icon: scrapeIcon(document.documentElement),
-    hero: [...scrapeHeroImgUrls(document.documentElement)],
+    image: scrapeImage(document.documentElement),
     title: scrapeTitle(document.documentElement, '').trim(),
     description: scrapeDescription(document.documentElement, '').trim(),
     name: scrapeSiteName(document.documentElement, '').trim(),
@@ -319,6 +319,9 @@ const scrapeHeroImgUrls = (el: Document | Element | DocumentFragment) => {
 
   return all
 }
+
+const scrapeImage = (el: Document | Element | DocumentFragment) =>
+  first(scrapeHeroImgUrls(el), null)
 
 const scrapeIcons = (el: HTMLElement): Iterable<HTMLLinkElement> =>
   query(

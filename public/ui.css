@@ -21,7 +21,9 @@
   :host,
   :root {
     --bg-color: rgb(53, 54, 58);
-    --bg-border-color: rgb(40, 40, 40);
+    --active-bg-color: rgb(60, 60, 60);
+    --bg-border-color: rgb(43, 44, 48);
+    --border-color: rgb(80, 80, 80);
 
     --text-color: #b8bfc6;
     --select-text-bg-color: #3a505f;
@@ -40,22 +42,20 @@
 .thumb:hover + .panel,
 .panel:hover,
 .panel.active {
-  bottom: 0;
   transition-delay: 0s;
+  right: 0;
 }
 
 .panel {
-  transition: bottom 0.15s ease-in;
+  right: -35em;
+  transition: right 0.15s ease-in;
   transition-delay: 0.2s;
   overflow: auto;
-  width: 100%;
-  max-height: 50vh;
-  min-height: 10vh;
+  width: 32em;
+  height: 100vh;
   position: fixed;
   display: flex;
   z-index: 99999999;
-  left: 0;
-  bottom: calc(-50vh + 2px);
   font-family: var(--font);
   font-style: var(--font-size);
   background-color: var(--bg-color);
@@ -79,8 +79,24 @@ li {
   color: var(--link-text-color);
 }
 
-li.backlink {
+ul.link {
+  display: flex;
+  justify-content: space-evenly;
+  flex-flow: column;
+  padding: 0;
+}
+
+li.link {
   list-style: none;
+  flex: 1;
+  margin: 0.5em;
+
+  border-radius: 14px;
+  max-width: 32em;
+}
+
+summary {
+  border-radius: 14px;
 }
 
 .context {
@@ -166,166 +182,10 @@ a:hover {
   transform: scale(1);
 }
 
-.notification {
-  line-height: 1.15; /* 1 */
-  -webkit-text-size-adjust: 100%;
-
-  pointer-events: none;
-  position: fixed;
-  display: inline-block;
-  z-index: 1000;
-  bottom: 10px;
-  right: 10px;
-  left: unset;
-  background-image: none;
-  background-color: transparent;
-  border: none;
-  margin: 10px;
-  padding: 0;
-
-  font-family: var(--font-family);
-}
-
-.notification form .version {
-  margin-right: 20px;
-}
-
-.notification .status {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  left: 0;
-  top: 0;
-  pointer-events: none;
-  display: block;
-  text-indent: -9999px;
-}
-
-.notification .status:after {
-  content: '';
-  background-color: white;
-  display: inline-block;
-  border-radius: 100%;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  width: 0.8rem;
-  height: 0.8rem;
-  transition: 0.3s;
-  position: absolute;
-  right: 3px;
-  top: 3px;
-}
-
-.update input:checked + form:not(:hover) .status:after {
-  background: transparent;
-  border-left: 2px solid #ffffff;
-  animation: spin 0.8s infinite linear;
-}
-
-.notification input:not(:checked) + form .status:after {
-  right: calc(100% - 3px);
-  transform: translateX(100%);
-}
-
-.notification input:checked + form .status:after {
-  right: 3px;
-}
-
-.notification input:checked + form .version {
-  opacity: 1;
-}
-
-.notification input + form .version {
-  opacity: 0;
-  transition: 0.3s;
-}
-
-.notification input[type='checkbox'] {
-  position: absolute;
-  opacity: 0;
-  display: block;
-  cursor: pointer;
-  width: 100%;
-  height: 100%;
-  pointer-events: all;
-  z-index: 10;
-}
-
-.notification.update {
-  animation: upgrade 1.2s infinite ease-in-out;
-}
-
-.notification.hide > form {
-  transform: scale(0);
-}
-
-.notification:hover > form {
-  transform: scale(1);
-}
-
-.notification > form {
-  transform: scale(1);
-}
-
-.notification form {
-  color: white;
-  pointer-events: all;
-  min-width: 1px;
-  box-sizing: border-box;
-  display: inline-block;
-
-  border-radius: 3em;
-  box-shadow: 0 0 18px rgba(100, 100, 100, 0.5);
-
-  margin: 0 auto;
-  transition: 0.4s cubic-bezier(0.86, 0, 0.07, 1) padding,
-    0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55) transform, 0.2s ease background-color,
-    0.2s ease opacity;
-}
-
-.notification > form {
-  animation: expand 0.2s ease;
-}
-
 @keyframes expand {
   from {
     transform: scale(0);
   }
-}
-
-.notification input:checked + form {
-  /* background: rgb(83, 64, 242); */
-  background-color: var(--bg-color);
-  opacity: 1;
-}
-
-.notification form {
-  /* background: #444249; */
-  opacity: 0.5;
-}
-
-.notification > form > label {
-  box-sizing: border-box;
-}
-
-.notification > form:hover,
-.active.notification > form {
-}
-
-.notification > form > .version:after {
-  content: '';
-}
-
-.notification > form > label {
-  display: inline-block;
-
-  transform: scale(1);
-  font-size: 22px;
-  font-size: 0.6rem;
-  text-align: right;
-  line-height: 1.15;
-  padding: 0.3rem;
-  cursor: pointer;
-  transition: 0.6s ease transform;
 }
 
 @keyframes spin {
@@ -339,13 +199,110 @@ a:hover {
   }
 }
 
-.active.notification {
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.card:hover {
+  background-color: var(--active-bg-color);
+}
+
+.card {
+  flex: 1 1 0%;
+  cursor: pointer;
+  align-items: flex-end;
+  display: flex;
+  border-radius: 14px;
+  max-width: 32em;
+  flex-direction: row;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  height: 8rem;
+  position: relative;
+}
+
+.card-image {
+  overflow: hidden;
+  height: 100%;
+  max-width: 50%;
+  width: 10em;
+  min-width: 8em;
+  border-right-width: 1px;
+  background-size: 3em;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: white;
+}
+
+.card .image {
   width: 100%;
-  background: var(--bg-color);
-  left: 0;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-content {
   margin: 0;
-  padding: 0;
-  bottom: 0;
-  max-width: 100%;
-  position: absolute;
+  justify-content: center;
+  flex-shrink: 1;
+  flex-grow: 1;
+  align-items: stretch;
+  flex-basis: auto;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  padding: 0.6em;
+  box-sizing: border-box;
+}
+
+.card .title {
+  font-size: 0.92em;
+  color: var(--header-color);
+  max-height: 1.3em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  border: none;
+}
+
+.card .description {
+  font-size: 0.86rem;
+  max-height: 5.4em;
+  margin: 0;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+}
+
+.url:hover {
+  text-decoration: underline;
+  color: var(--text-color);
+}
+.url:hover .site-icon {
+  opacity: 1;
+}
+
+.card .url {
+  display: block;
+  font-size: 0.72em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+  border: none;
+  line-height: 1.4em;
+  height: 1.4em;
+  margin-top: 6px;
+  vertical-align: middle;
+  align-items: initial;
+}
+
+.card .site-icon {
+  opacity: 0.8;
+  width: 1rem;
+  height: 1rem;
+  margin-right: 6px;
+  float: left;
+  border-radius: 3px;
 }

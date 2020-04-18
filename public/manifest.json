@@ -15,7 +15,15 @@
       "js": ["content.js"]
     }
   ],
-  "web_accessible_resources": ["ui.html", "ui.css", "icon-on.svg", "icon-off.svg"],
+  "web_accessible_resources": [
+    "ui.html",
+    "ui.css",
+    "icon-on.svg",
+    "icon-off.svg",
+    "md-icon.svg",
+    "link-solid.svg",
+    "file-alt-solid.svg"
+  ],
   "browser_action": {
     "default_title": "Context",
     "default_icon": {

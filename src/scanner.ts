@@ -9,12 +9,14 @@ const readURL = (href: string, base?: URL): URL => {
 }
 
 export const read = (target: HTMLDocument): protocol.InputResource => {
-  const { title, description } = clipSummary(document)
+  const { title, description, icon, image } = clipSummary(document)
 
   return {
     url: document.URL,
     links: readLinks(document),
     cid: null,
+    icon,
+    image,
     title,
     description,
     tags: [],

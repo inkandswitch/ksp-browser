@@ -144,6 +144,8 @@ const toOutput = (input: Protocol.InputResource): Protocol.Resource => {
     cid: null,
     title: input.title,
     description: input.description,
+    icon: input.icon,
+    image: input.image,
   }
 
   const resource = {
