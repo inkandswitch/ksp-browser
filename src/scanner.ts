@@ -1,5 +1,7 @@
 import { clipSummary } from './scraper'
 import * as protocol from './protocol'
+import Readability from 'readability/Readability'
+import { turndown } from './turn-down'
 
 const readURL = (href: string, base?: URL): URL => {
   const url = new URL(href, base)
@@ -14,6 +16,7 @@ export const read = (target: HTMLDocument): protocol.InputResource => {
   return {
     url: document.URL,
     links: readLinks(document),
+    content: readContent(document),
     cid: null,
     icon,
     image,
@@ -21,6 +24,12 @@ export const read = (target: HTMLDocument): protocol.InputResource => {
     description,
     tags: [],
   }
+}
+
+const readContent = (document: HTMLDocument): string => {
+  let source = <HTMLDocument>document.cloneNode(true)
+  var article = new Readability(source).parse()
+  return turndown(article.content)
 }
 
 const readLinks = (document: HTMLDocument): protocol.InputLink[] => {
