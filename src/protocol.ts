@@ -48,6 +48,7 @@ export type InputResource = {
   cid: Option<string>
   icon: Option<string>
   image: Option<string>
+  content: Option<string>
   title: string
   description: string
   links: Option<Vec<InputLink>>
