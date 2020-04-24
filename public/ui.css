@@ -80,13 +80,16 @@ li {
   color: var(--link-text-color);
 }
 
+ul.similar,
 ul.link {
   display: flex;
   justify-content: space-evenly;
   flex-flow: column;
   padding: 0;
+  margin: 0;
 }
 
+li.similar,
 li.link {
   list-style: none;
   flex: 1;
@@ -94,6 +97,35 @@ li.link {
 
   border-radius: 14px;
   max-width: 32em;
+}
+
+ul.keyword {
+  display: flex;
+  flex-flow: row;
+  flex-wrap: wrap;
+  padding: 0.25rem;
+  margin: 0;
+}
+
+li.keyword {
+  list-style: none;
+  display: inline-flex;
+  padding: 2px;
+}
+
+.query {
+  margin: 0 0.5em;
+  padding: 0.25rem;
+}
+
+.query .name {
+  color: var(--active-link-text-color);
+  font-weight: bold;
+  padding-right: 3px;
+}
+
+.query .input {
+  color: var(--text-color);
 }
 
 summary {
@@ -121,6 +153,7 @@ a:hover {
   border-color: var(--active-link-text-color);
 }
 
+a.keyword,
 .tag {
   font-size: 0.5em;
   border-radius: 4px;
@@ -128,6 +161,7 @@ a:hover {
   margin: 4px;
   border: 1px solid var(--bg-border-color);
 }
+a.keyword:hover,
 .tag:hover {
   color: var(--text-color);
   border-color: var(--bg-border-color);
@@ -200,10 +234,13 @@ a:hover {
   }
 }
 
-details > summary::marker,
-details > summary::-webkit-details-marker {
-  display: none;
+details > summary::marker {
   content: '';
+}
+
+details > summary::-webkit-details-marker {
+  content: '';
+  display: none;
 }
 
 .card:hover {

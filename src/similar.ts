@@ -86,7 +86,7 @@ const viewQuery = (query: Query | null) =>
     <span class="name">similar</span><span class="input">${query ? query.input : ''}</span>
   </div>`
 
-const viewKeywords = (keywords: string[]) => viewList(keywords || [], viewKeyword, ['keywords'])
+const viewKeywords = (keywords: string[]) => viewList(keywords || [], viewKeyword, ['keyword'])
 const viewKeyword = (name: string) => html`<a href="#${name}" class="keyword">${name}</a>`
 
 const viewSimilarResources = (entries: SimilarResource[]): View =>

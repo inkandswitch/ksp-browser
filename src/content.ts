@@ -231,7 +231,6 @@ const render = (context: Context<Model>) => {
     document.addEventListener('selectionchange', context, { passive: true })
 
     target.program = context
-    console.log('!!!!!!!!!!!!!!!!', node.program, target.program, node === target)
   } else {
     renderView(view(context.state), node.shadowRoot!)
   }
@@ -239,6 +238,11 @@ const render = (context: Context<Model>) => {
 
 const view = (state: Model) =>
   html`
+    <style>
+      aside {
+        display: none;
+      }
+    </style>
     <link rel="stylesheet" href="${chrome.extension.getURL('ui.css')}" />
     ${Thumb.view(state)} ${Backlinks.view(state)} ${Siblinks.view(state.siblinks)}
     ${Similar.view(state.similar)}
