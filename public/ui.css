@@ -41,7 +41,8 @@
 
 .thumb:hover + .panel,
 .panel:hover,
-.panel.active {
+.panel.active,
+.similar.panel.ready {
   transition-delay: 0s;
   right: 0;
 }

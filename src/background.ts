@@ -35,6 +35,10 @@ const onRequest = async (
     case 'TagsRequest': {
       return null
     }
+    case 'SimilarRequest': {
+      const output = await similar(message.input)
+      return { type: 'SimilarResponse', similar: output, id: message.id }
+    }
   }
 }
 
@@ -183,6 +187,31 @@ const lookup = async (url: string): Promise<Protocol.Resource> =>
       }`,
     },
     (data) => data.resource
+  )
+
+const similar = async (input: string): Promise<Protocol.SimilarResources> =>
+  ksp(
+    {
+      operationName: 'Similar',
+      variables: { input },
+      query: `query Similar($input:String!) {
+        similar(input:$input) {
+          keywords
+          similar {
+            score,
+            resource {
+              url
+              info {
+                icon
+                title
+                description
+              }
+            }
+          }
+        }
+      }`,
+    },
+    (data) => data.similar
   )
 
 const ksp = async <a, b>(input: a, decode: (output: any) => b): Promise<b> => {

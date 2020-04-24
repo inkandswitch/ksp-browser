@@ -1,33 +1,15 @@
-import {
-  ExtensionInbox,
-  AgentInbox,
-  AgentMessage,
-  UIInbox,
-  CloseRequest,
-  Enable,
-  Disable,
-  LookupResponse,
-  ToggleRequest,
-  InspectLinksResponse,
-  OpenRequest,
-  OpenResponse,
-} from './mailbox'
+import { AgentInbox, AgentMessage, UIInbox, SimilarResponse, SimilarRequest } from './mailbox'
 import * as Protocol from './protocol'
 import { Program, Context } from './program'
 // No idea why just `from 'lit-html' does not seem to work here.
-import {
-  html,
-  render as renderHTML,
-  nothing,
-  Template,
-  TemplateResult,
-} from '../node_modules/lit-html/lit-html'
-import { stat } from 'fs'
+import { html, renderView, nothing, View } from './view/html'
 import { md } from './remark'
 import { map } from './iterable'
+import { send, request } from './runtime'
 import * as scanner from './scanner'
 import * as Siblinks from './siblinks'
 import * as Backlinks from './backlinks'
+import * as Similar from './similar'
 import * as Thumb from './thumb'
 import { Mode } from './mode'
 
@@ -50,13 +32,17 @@ type Model = {
   mode: Mode
   siblinks: Siblinks.Model
   resource: null | Protocol.Resource
+  similar: Similar.Model
 }
 
 type Message = AgentInbox | AgentMessage
 type Address = { tabId: number; frameId: number }
 
 const init = (): [Model, Promise<null | Message>] => {
-  return [{ mode: Mode.Enabled, resource: null, siblinks: Siblinks.init() }, lookup()]
+  return [
+    { mode: Mode.Enabled, resource: null, siblinks: Siblinks.init(), similar: Similar.init() },
+    lookup(),
+  ]
 }
 
 const update = (message: Message, state: Model): [Model, null | Promise<null | Message>] => {
@@ -91,6 +77,12 @@ const update = (message: Message, state: Model): [Model, null | Promise<null | M
     case 'LinkHover': {
       return [setHoveredLink(state, message.url), null]
     }
+    case 'SimilarRequest': {
+      return updateSimilar(state, message)
+    }
+    case 'SimilarResponse': {
+      return updateSimilar(state, message)
+    }
   }
 }
 
@@ -110,11 +102,18 @@ const inspectLocalLinks = (state: Model, resource: Protocol.Resource) => {
   return { ...state, mode: Mode.Active, resource }
 }
 
+const updateSimilar = (
+  state: Model,
+  message: SimilarResponse | SimilarRequest
+): [Model, null | Promise<null | Message>] => {
+  const [similar, fx] = Similar.update(message, state.similar)
+  return [{ ...state, similar }, fx]
+}
+
 const ingest = async (): Promise<Message | null> => {
   await loaded(document)
   const resource = scanner.read(document)
   const response = await request({ type: 'IngestRequest', resource })
-  console.log(response)
   return response
 }
 
@@ -129,7 +128,6 @@ const once = (target: Node | Window, type: string) =>
 
 const lookup = async (): Promise<Message | null> => {
   const response = await request({ type: 'LookupRequest', lookup: location.href })
-  console.log(response)
   return response
 }
 
@@ -220,27 +218,30 @@ const toggle = (state: Model): Model => {
   }
 }
 
-const view = (context: Context<Model>) => {
-  const view = document.querySelector('cont-ext')
-  if (!view) {
-    const view = <HTMLElement & { program: Context<Model> }>document.createElement('cont-ext')
-    let shadowRoot = view.attachShadow({ mode: 'open' })
-    renderHTML(render(context.state), shadowRoot)
-    document.documentElement.appendChild(view)
+const render = (context: Context<Model>) => {
+  let node = document.querySelector('cont-ext')
+  if (!node) {
+    const node = <HTMLElement & { program: Context<Model> }>document.createElement('cont-ext')
+    let shadowRoot = node.attachShadow({ mode: 'open' })
+    renderView(view(context.state), shadowRoot)
+    const target = document.documentElement.appendChild(node)
     shadowRoot.addEventListener('click', context, { passive: true })
     document.addEventListener('mouseover', context, { passive: true })
     document.addEventListener('mouseout', context, { passive: true })
+    document.addEventListener('selectionchange', context, { passive: true })
 
-    view.program = context
+    target.program = context
+    console.log('!!!!!!!!!!!!!!!!', node.program, target.program, node === target)
   } else {
-    renderHTML(render(context.state), view.shadowRoot!)
+    renderView(view(context.state), node.shadowRoot!)
   }
 }
 
-const render = (state: Model) =>
+const view = (state: Model) =>
   html`
     <link rel="stylesheet" href="${chrome.extension.getURL('ui.css')}" />
     ${Thumb.view(state)} ${Backlinks.view(state)} ${Siblinks.view(state.siblinks)}
+    ${Similar.view(state.similar)}
   `
 
 const onEvent = (event: Event): Message | null => {
@@ -253,6 +254,9 @@ const onEvent = (event: Event): Message | null => {
     }
     case 'mouseout': {
       return onMouseOut(<MouseEvent>event)
+    }
+    case 'selectionchange': {
+      return onSelectionChange(event)
     }
     default: {
       return null
@@ -272,6 +276,13 @@ const onClick = (event: MouseEvent): Message | null => {
     }
   }
   return null
+}
+
+const onSelectionChange = (event: Event): Message | null => {
+  const { timeStamp } = event
+  const selection = document.getSelection()
+  const input = selection ? selection.toString().trim() : ''
+  return { type: 'SimilarRequest', input, id: timeStamp }
 }
 
 const onMouseOver = (event: MouseEvent): Message | null => {
@@ -298,7 +309,7 @@ const onload = async () => {
       init,
       update,
       onEvent,
-      render: view,
+      render,
     },
     undefined,
     document.body
@@ -312,26 +323,5 @@ const onload = async () => {
   const onExtensionMessage = (message: AgentInbox) => program.send(message)
   chrome.runtime.onMessage.addListener(onExtensionMessage)
 }
-
-const send = async (message: ExtensionInbox) => {
-  chrome.runtime.sendMessage(message)
-  return null
-}
-
-const request = (message: ExtensionInbox): Promise<Message | null> =>
-  new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(message, (response) => {
-      if (response) {
-        resolve(response)
-      } else if (chrome.runtime.lastError) {
-        const error = chrome.runtime.lastError
-        if (!error) {
-          resolve(response)
-        } else {
-          reject(error)
-        }
-      }
-    })
-  })
 
 onload()

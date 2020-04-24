@@ -22,6 +22,18 @@ export type InspectLinksResponse = {
   resource: Protocol.Resource
 }
 
+export type SimilarRequest = {
+  type: 'SimilarRequest'
+  id: number
+  input: string
+}
+
+export type SimilarResponse = {
+  type: 'SimilarResponse'
+  id: number
+  similar: Protocol.SimilarResources
+}
+
 export type OpenRequest = {
   type: 'OpenRequest'
   url: string
@@ -67,6 +79,7 @@ export type ExtensionInbox =
   | IngestRequest
   | TagsRequest
   | OpenRequest
+  | SimilarRequest
 
 export type AgentInbox =
   | ToggleRequest
@@ -74,8 +87,17 @@ export type AgentInbox =
   | IngestResponse
   | OpenResponse
   | InspectLinksRequest
+  | SimilarResponse
 
-export type AgentMessage = Enable | Disable | OpenRequest | InspectLinksResponse | LinkHover
+export type AgentOwnInbox =
+  | Enable
+  | Disable
+  | OpenRequest
+  | InspectLinksResponse
+  | LinkHover
+  | SimilarRequest
+
+export type AgentMessage = AgentInbox | AgentOwnInbox
 
 export type UIInbox = CloseRequest
 

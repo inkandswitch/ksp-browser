@@ -1,4 +1,4 @@
-import { html, nothing, Template, TemplateResult } from '../node_modules/lit-html/lit-html'
+import { html, View } from './view/html'
 import { Link, Tag, Ingest } from './protocol'
 import { viewLinks } from './links'
 
@@ -46,7 +46,7 @@ export const hover = (state: Model, url: string | null): Model => {
 export const activeSiblink = (sibLinks: null | Siblinks, url: string): Siblink | null =>
   (sibLinks && sibLinks.get(url)) || null
 
-export const view = (state: Model): TemplateResult => {
+export const view = (state: Model): View => {
   const target = state.activeSiblink
   const links = target ? target.links : []
   const mode = target && state.hoveredURL ? 'active' : 'disabled'

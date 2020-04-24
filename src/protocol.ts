@@ -39,6 +39,16 @@ export type Tag = {
   target: Resource
 }
 
+export type SimilarResources = {
+  keywords: string[]
+  similar: SimilarResource[]
+}
+
+export type SimilarResource = {
+  resource: Resource
+  score: number
+}
+
 export type Option<t> = null | t
 
 export type Vec<t> = t[]
