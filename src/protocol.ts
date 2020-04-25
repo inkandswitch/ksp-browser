@@ -49,6 +49,11 @@ export type SimilarResource = {
   score: number
 }
 
+export type InputSimilar = {
+  content: string
+  url: string
+}
+
 export type Option<t> = null | t
 
 export type Vec<t> = t[]

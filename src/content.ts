@@ -11,6 +11,7 @@ import * as Siblinks from './siblinks'
 import * as Backlinks from './backlinks'
 import * as Similar from './similar'
 import * as Thumb from './thumb'
+import * as URL from './url'
 import { Mode } from './mode'
 
 const onUIMessage = (message: MessageEvent) => {
@@ -127,6 +128,7 @@ const once = (target: Node | Window, type: string) =>
   new Promise((resolve) => target.addEventListener(type, resolve, { once: true }))
 
 const lookup = async (): Promise<Message | null> => {
+  const lookupURL = URL.from(location.href, { hash: '' })
   const response = await request({ type: 'LookupRequest', lookup: location.href })
   return response
 }
@@ -285,8 +287,9 @@ const onClick = (event: MouseEvent): Message | null => {
 const onSelectionChange = (event: Event): Message | null => {
   const { timeStamp } = event
   const selection = document.getSelection()
-  const input = selection ? selection.toString().trim() : ''
-  return { type: 'SimilarRequest', input, id: timeStamp }
+  const content = selection ? selection.toString().trim() : ''
+  const url = URL.from(document.URL, { hash: '' }).href
+  return { type: 'SimilarRequest', input: { content, url }, id: timeStamp }
 }
 
 const onMouseOver = (event: MouseEvent): Message | null => {

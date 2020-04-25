@@ -25,7 +25,7 @@ export type InspectLinksResponse = {
 export type SimilarRequest = {
   type: 'SimilarRequest'
   id: number
-  input: string
+  input: Protocol.InputSimilar
 }
 
 export type SimilarResponse = {

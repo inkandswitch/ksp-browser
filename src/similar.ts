@@ -1,5 +1,5 @@
 import { html, nothing, View } from './view/html'
-import { SimilarResources, SimilarResource } from './protocol'
+import { SimilarResources, SimilarResource, InputSimilar } from './protocol'
 import { viewList } from './view/list'
 import { view as viewResource } from './view/resource'
 import { request } from './runtime'
@@ -17,7 +17,7 @@ type Idle = { status: Status.Idle; query: null; result: null }
 type Pending = { status: Status.Pending; query: Query; result: null }
 type Ready = { status: Status.Ready; query: Query; result: SimilarResources }
 
-export type Query = { id: number; input: string }
+export type Query = { id: number; input: InputSimilar }
 export type Model = Idle | Pending | Ready
 
 export const idle = (): Model => {
@@ -47,7 +47,7 @@ export const query = (query: Query, state: Model): [Model, null | Promise<null |
     }
     case Status.Ready:
     case Status.Pending: {
-      if (query.input.length < 4) {
+      if (query.input.content.length < 4) {
         return [idle(), null]
       } else if (query.input != state.query.input) {
         return [{ status: Status.Pending, query, result: null }, similar(query)]

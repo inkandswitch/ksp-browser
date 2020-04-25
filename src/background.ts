@@ -1,5 +1,6 @@
 import { ExtensionInbox, AgentInbox, LookupResponse, IngestResponse, OpenResponse } from './mailbox'
 import * as Protocol from './protocol'
+import * as URL from './url'
 
 const onRequest = async (
   message: ExtensionInbox,
@@ -36,6 +37,7 @@ const onRequest = async (
       return null
     }
     case 'SimilarRequest': {
+      const url = URL.from(document.URL, { hash: '' }).href
       const output = await similar(message.input)
       return { type: 'SimilarResponse', similar: output, id: message.id }
     }
@@ -189,12 +191,12 @@ const lookup = async (url: string): Promise<Protocol.Resource> =>
     (data) => data.resource
   )
 
-const similar = async (input: string): Promise<Protocol.SimilarResources> =>
+const similar = async (input: Protocol.InputSimilar): Promise<Protocol.SimilarResources> =>
   ksp(
     {
       operationName: 'Similar',
       variables: { input },
-      query: `query Similar($input:String!) {
+      query: `query Similar($input:InputSimilar!) {
         similar(input:$input) {
           keywords
           similar {
