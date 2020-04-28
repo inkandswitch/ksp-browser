@@ -8,9 +8,33 @@ export type ToggleRequest = {
   type: 'Toggle'
 }
 
+export type Rect = {
+  top: number
+  left: number
+  width: number
+  height: number
+}
+
+export type HoveredLink = {
+  url: string
+  rect: Rect
+}
+
 export type LinkHover = {
   type: 'LinkHover'
-  url: string | null
+  link: HoveredLink | null
+}
+
+export type SelectionChange = {
+  type: 'SelectionChange'
+  data: SelectionData | null
+}
+
+export type SelectionData = {
+  url: string
+  content: string
+  id: number
+  rect: Rect
 }
 
 export type InspectLinksRequest = {
@@ -25,6 +49,7 @@ export type InspectLinksResponse = {
 export type SimilarRequest = {
   type: 'SimilarRequest'
   id: number
+  rect: Rect
   input: Protocol.InputSimilar
 }
 
@@ -95,7 +120,7 @@ export type AgentOwnInbox =
   | OpenRequest
   | InspectLinksResponse
   | LinkHover
-  | SimilarRequest
+  | SelectionChange
 
 export type AgentMessage = AgentInbox | AgentOwnInbox
 

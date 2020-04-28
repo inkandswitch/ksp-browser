@@ -1,4 +1,12 @@
-import { AgentInbox, AgentMessage, UIInbox, SimilarResponse, SimilarRequest } from './mailbox'
+import {
+  AgentInbox,
+  AgentMessage,
+  UIInbox,
+  SimilarResponse,
+  SimilarRequest,
+  HoveredLink,
+  SelectionChange,
+} from './mailbox'
 import * as Protocol from './protocol'
 import { Program, Context } from './program'
 // No idea why just `from 'lit-html' does not seem to work here.
@@ -13,6 +21,7 @@ import * as Similar from './similar'
 import * as Thumb from './thumb'
 import * as URL from './url'
 import { Mode } from './mode'
+import { getSelectionTooltipRect } from './dom/selection'
 
 const onUIMessage = (message: MessageEvent) => {
   switch (message.type) {
@@ -76,9 +85,9 @@ const update = (message: Message, state: Model): [Model, null | Promise<null | M
       return [setIngested(state, message.ingest), null]
     }
     case 'LinkHover': {
-      return [setHoveredLink(state, message.url), null]
+      return [setHoveredLink(state, message.link), null]
     }
-    case 'SimilarRequest': {
+    case 'SelectionChange': {
       return updateSimilar(state, message)
     }
     case 'SimilarResponse': {
@@ -87,8 +96,8 @@ const update = (message: Message, state: Model): [Model, null | Promise<null | M
   }
 }
 
-const setHoveredLink = (state: Model, url: null | string) => {
-  return { ...state, siblinks: Siblinks.hover(state.siblinks, url) }
+const setHoveredLink = (state: Model, link: HoveredLink | null) => {
+  return { ...state, siblinks: Siblinks.hover(state.siblinks, link) }
 }
 
 const setIngested = (state: Model, ingested: Protocol.Ingest) => {
@@ -105,7 +114,7 @@ const inspectLocalLinks = (state: Model, resource: Protocol.Resource) => {
 
 const updateSimilar = (
   state: Model,
-  message: SimilarResponse | SimilarRequest
+  message: SimilarResponse | SelectionChange
 ): [Model, null | Promise<null | Message>] => {
   const [similar, fx] = Similar.update(message, state.similar)
   return [{ ...state, similar }, fx]
@@ -220,10 +229,12 @@ const toggle = (state: Model): Model => {
   }
 }
 
-const render = (context: Context<Model>) => {
+const render = (context: Context<Model, Message>) => {
   let node = document.querySelector('cont-ext')
   if (!node) {
-    const node = <HTMLElement & { program: Context<Model> }>document.createElement('cont-ext')
+    const node = <HTMLElement & { program: Context<Model, Message> }>(
+      document.createElement('cont-ext')
+    )
     let shadowRoot = node.attachShadow({ mode: 'open' })
     renderView(view(context.state), shadowRoot)
     const target = document.documentElement.appendChild(node)
@@ -287,16 +298,27 @@ const onClick = (event: MouseEvent): Message | null => {
 const onSelectionChange = (event: Event): Message | null => {
   const { timeStamp } = event
   const selection = document.getSelection()
-  const content = selection ? selection.toString().trim() : ''
-  const url = URL.from(document.URL, { hash: '' }).href
-  return { type: 'SimilarRequest', input: { content, url }, id: timeStamp }
+  const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null
+  const content = range ? range.toString().trim() : ''
+  if (content != '') {
+    const url = URL.from(document.URL, { hash: '' }).href
+    // const { top, left, width, height } = range!.getBoundingClientRect()
+    const { top, left, width, height } = <DOMRect>getSelectionTooltipRect(selection!)
+    const rect = { top: top + window.scrollY, left: left + window.scrollX, width, height }
+    const id = timeStamp
+    return { type: 'SelectionChange', data: { content, url, rect, id } }
+  } else {
+    return { type: 'SelectionChange', data: null }
+  }
 }
 
 const onMouseOver = (event: MouseEvent): Message | null => {
   const target = <HTMLElement>event.target
   if (target.localName === 'a') {
     const anchor = <HTMLAnchorElement>target
-    return { type: 'LinkHover', url: anchor.href }
+    const { top, left, height, width } = anchor.getBoundingClientRect()
+    const rect = { top: top + window.scrollX, left: window.scrollY + left, height, width }
+    return { type: 'LinkHover', link: { url: anchor.href, rect } }
   }
   return null
 }
@@ -305,7 +327,7 @@ const onMouseOut = (event: MouseEvent): Message | null => {
   const target = <HTMLElement>event.target
   if (target.localName === 'a') {
     const anchor = <HTMLAnchorElement>target
-    return { type: 'LinkHover', url: null }
+    return { type: 'LinkHover', link: null }
   }
   return null
 }

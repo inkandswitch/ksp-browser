@@ -205,6 +205,7 @@ const similar = async (input: Protocol.InputSimilar): Promise<Protocol.SimilarRe
               url
               info {
                 icon
+                image
                 title
                 description
               }

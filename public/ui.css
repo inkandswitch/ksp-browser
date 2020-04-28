@@ -56,13 +56,103 @@
   height: 100vh;
   position: fixed;
   display: flex;
-  z-index: 99999999;
+  z-index: 99999992;
   font-family: var(--font);
   font-style: var(--font-size);
   background-color: var(--bg-color);
   border-top: 1px solid var(--bg-border-color);
   display: flex;
   flex-direction: column;
+}
+
+.tooltip {
+  position: absolute;
+  display: inline-block;
+  z-index: 99999993;
+  margin: 0;
+  background: var(--bg-color);
+  color: var(--text-color);
+  padding: 5px;
+  border: none;
+  border-radius: 3px;
+  transform: translateX(-50%) translateY(12px);
+  padding: 0;
+  font-family: var(--font);
+  font-size: 0.8em;
+}
+.tooltip::before {
+  content: '';
+  display: inline-block;
+  position: absolute;
+  z-index: -1;
+  width: 12px;
+  height: 12px;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%) translateY(-50%) rotate(45deg);
+  background: inherit;
+}
+
+.tooltip ul.similar {
+  max-height: 18em;
+  width: 32em;
+  overflow: auto;
+  scroll-snap-type: y mandatory;
+  justify-content: flex-start;
+  padding: 0;
+  margin: 0;
+  border-radius: inherit;
+}
+
+.tooltip li.similar {
+  padding: 0;
+  margin: 0;
+  height: 6em;
+  scroll-snap-align: start;
+}
+
+.tooltip .card {
+  height: 6em;
+  max-width: 100%;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tooltip .card-image {
+  width: 6em;
+  min-width: 6em;
+}
+
+.tooltip .card .title {
+  font-size: 1em;
+}
+
+.tooltip .card .description {
+  font-size: 0.85em;
+  max-height: 2.6em;
+}
+
+.tooltip .card .description p {
+  margin: 0;
+}
+
+.tooltip .card .url {
+  height: 1.4em;
+  line-height: 1.4em;
+}
+.tooltip .card .site-icon {
+  height: 1.4em;
+  width: 1.4em;
+}
+
+.debug {
+  position: absolute;
+  z-index: 999999991;
+  background: red;
+  opacity: 0.3;
+  display: inline-block;
+  pointer-events: none;
 }
 
 h2 {
@@ -172,7 +262,7 @@ a.keyword:hover,
 
 .thumb {
   position: fixed;
-  z-index: 99999998;
+  z-index: 99999991;
   width: 44px;
   height: auto;
   overflow: hidden;

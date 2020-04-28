@@ -54,11 +54,12 @@ export type App<message, model, config> = {
   onEvent: (event: Event) => null | message
   init(options: config): [model, null | Promise<message>]
   update(input: message, state: model): [model, null | Promise<message>]
-  render(context: Context<model>): void
+  render(context: Context<model, message>): void
 }
 
-export interface Context<model> {
+export interface Context<model, message> {
   readonly target: HTMLElement
   readonly state: model
   handleEvent(event: Event): void
+  send(payload: message): void
 }

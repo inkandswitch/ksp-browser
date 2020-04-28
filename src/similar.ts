@@ -3,7 +3,15 @@ import { SimilarResources, SimilarResource, InputSimilar } from './protocol'
 import { viewList } from './view/list'
 import { view as viewResource } from './view/resource'
 import { request } from './runtime'
-import { AgentInbox, AgentOwnInbox, SimilarResponse, SimilarRequest } from './mailbox'
+import {
+  AgentInbox,
+  AgentOwnInbox,
+  SimilarResponse,
+  SimilarRequest,
+  Rect,
+  SelectionChange,
+  SelectionData,
+} from './mailbox'
 
 type Message = AgentInbox
 
@@ -17,7 +25,11 @@ type Idle = { status: Status.Idle; query: null; result: null }
 type Pending = { status: Status.Pending; query: Query; result: null }
 type Ready = { status: Status.Ready; query: Query; result: SimilarResources }
 
-export type Query = { id: number; input: InputSimilar }
+export type Query = {
+  id: number
+  input: InputSimilar
+  rect: Rect
+}
 export type Model = Idle | Pending | Ready
 
 export const idle = (): Model => {
@@ -27,16 +39,28 @@ export const idle = (): Model => {
 export const init = idle
 
 export const update = (
-  message: SimilarResponse | SimilarRequest,
+  message: SimilarResponse | SelectionChange,
   state: Model
 ): [Model, null | Promise<null | Message>] => {
   switch (message.type) {
-    case 'SimilarRequest': {
-      return query(message, state)
+    case 'SelectionChange': {
+      return updateSelection(message.data, state)
     }
     case 'SimilarResponse': {
       return complete(message, state)
     }
+  }
+}
+
+const updateSelection = (
+  data: SelectionData | null,
+  state: Model
+): [Model, null | Promise<null | Message>] => {
+  if (data) {
+    const { content, url, id, rect } = data
+    return query({ input: { content, url }, id, rect }, state)
+  } else {
+    return [idle(), null]
   }
 }
 
@@ -70,16 +94,44 @@ export const complete = (
 }
 
 const similar = async (query: Query): Promise<AgentInbox | null> => {
-  const response = await request({ type: 'SimilarRequest', input: query.input, id: query.id })
+  const response = await request({
+    type: 'SimilarRequest',
+    input: query.input,
+    rect: query.rect,
+    id: query.id,
+  })
   return response
 }
 
-export const view = (state: Model): View =>
+export const view = (state: Model): View => html`${viewTooltip(state)}`
+
+const viewSidebar = (state: Model): View =>
   html`<aside class="panel sans-serif similar ${state.status}">
     <h2 class="marked"><span>Similar</span></h2>
     ${viewQuery(state.query)} ${viewKeywords(state.result ? state.result.keywords : [])}
     ${viewSimilarResources(state.result ? state.result.similar : [])}
-  </aside>`
+  </aside> `
+
+const viewTooltip = (state: Model): View => {
+  switch (state.status) {
+    case Status.Idle:
+    case Status.Pending:
+      return viewInactiveTooltip(state)
+    case Status.Ready:
+      return viewActiveTooltip(state)
+  }
+}
+
+const viewInactiveTooltip = (state: Idle | Pending) => nothing
+
+const viewActiveTooltip = ({ query: { rect }, result }: Ready) =>
+  html`<dialog
+    class="tooltip sans-serif similar"
+    open
+    style="top: ${rect.top + rect.height}px; left:${rect.left + rect.width}px;"
+  >
+    ${viewSimilarResources(result.similar)}
+  </dialog>`
 
 const viewQuery = (query: Query | null) =>
   html`<div class="query">

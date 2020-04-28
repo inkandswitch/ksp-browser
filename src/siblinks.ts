@@ -1,18 +1,23 @@
 import { html, View } from './view/html'
 import { Link, Tag, Ingest } from './protocol'
 import { viewLinks } from './links'
+import { HoveredLink } from './mailbox'
 
 type Siblink = { links: Link[]; tags: Tag[] }
 type Siblinks = Map<string, Siblink>
 
+const isEqualLink = (left: HoveredLink, right: HoveredLink): boolean => {
+  return left.url === right.url
+}
+
 export type Model = {
-  hoveredURL: null | string
+  hoveredLink: null | HoveredLink
   activeSiblink: null | Siblink
   sibLinks: null | Siblinks
 }
 
 export const init = (): Model => {
-  return { hoveredURL: null, activeSiblink: null, sibLinks: null }
+  return { hoveredLink: null, activeSiblink: null, sibLinks: null }
 }
 
 export const ingested = (state: Model, { sibLinks }: Ingest): Model => {
@@ -29,27 +34,27 @@ export const ingested = (state: Model, { sibLinks }: Ingest): Model => {
   return {
     ...state,
     sibLinks: map,
-    activeSiblink: state.hoveredURL ? activeSiblink(map, state.hoveredURL) : null,
+    activeSiblink: state.hoveredLink ? activeSiblink(map, state.hoveredLink) : null,
   }
 }
 
-export const hover = (state: Model, url: string | null): Model => {
-  if (state.hoveredURL === url) {
+export const hover = (state: Model, link: HoveredLink | null): Model => {
+  if (state.hoveredLink && link && isEqualLink(state.hoveredLink, link)) {
     return state
-  } else if (url != null) {
-    return { ...state, hoveredURL: url, activeSiblink: activeSiblink(state.sibLinks, url) }
+  } else if (link != null) {
+    return { ...state, hoveredLink: link, activeSiblink: activeSiblink(state.sibLinks, link) }
   } else {
-    return { ...state, hoveredURL: null }
+    return { ...state, hoveredLink: null }
   }
 }
 
-export const activeSiblink = (sibLinks: null | Siblinks, url: string): Siblink | null =>
-  (sibLinks && sibLinks.get(url)) || null
+export const activeSiblink = (sibLinks: null | Siblinks, link: HoveredLink): Siblink | null =>
+  (sibLinks && sibLinks.get(link.url)) || null
 
 export const view = (state: Model): View => {
   const target = state.activeSiblink
   const links = target ? target.links : []
-  const mode = target && state.hoveredURL ? 'active' : 'disabled'
+  const mode = target && state.hoveredLink ? 'active' : 'disabled'
   return html`<aside class="panel sans-serif ${mode}">
     ${viewLinks(links, 'Siblinks')}
   </aside>`
