@@ -317,7 +317,7 @@ const onMouseOver = (event: MouseEvent): Message | null => {
   if (target.localName === 'a') {
     const anchor = <HTMLAnchorElement>target
     const { top, left, height, width } = anchor.getBoundingClientRect()
-    const rect = { top: top + window.scrollX, left: window.scrollY + left, height, width }
+    const rect = { top: top + window.scrollY, left: window.scrollX + left, height, width }
     return { type: 'LinkHover', link: { url: anchor.href, rect } }
   }
   return null
