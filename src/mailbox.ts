@@ -12,8 +12,15 @@ export type ToggleRequest = {
   type: 'Toggle'
 }
 
-export type ShowSiblinks = {
-  type: 'ShowSiblinks'
+export enum Display {
+  Backlinks = 'backlinks',
+  Siblinks = 'siblinks',
+  Simlinks = 'simlinks',
+}
+
+export type ShowRequest = {
+  type: 'Show'
+  show: Display
 }
 
 export type Rect = {
@@ -116,7 +123,7 @@ export type ExtensionInbox =
 
 export type AgentInbox =
   | ToggleRequest
-  | ShowSiblinks
+  | ShowRequest
   | HideRequest
   | LookupResponse
   | IngestResponse

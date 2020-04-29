@@ -103,10 +103,34 @@ const similar = async (query: Query): Promise<AgentInbox | null> => {
   return response
 }
 
-export const view = (state: Model): View => html`${viewTooltip(state)}`
+const toReady = (state: Model): Ready | null => {
+  switch (state.status) {
+    case Status.Idle:
+    case Status.Pending:
+      return null
+    case Status.Ready:
+      return state
+  }
+}
+
+export const view = (state: Model): View => html`${viewBadge(state)}${viewSidebar(state)}`
+
+const viewBadge = (state: Model): View => {
+  const data = toReady(state)
+  return data ? showBadge(data) : hideBadge()
+}
+
+const hideBadge = (): View => nothing
+const showBadge = ({ query: { rect }, status }: Ready): View =>
+  html`<button
+    class="badge sans-serif simlinks ${status}"
+    style="top: ${rect.top + rect.height}px; left:${rect.left + rect.width / 2}px;"
+  >
+    <figure class="icon" />
+  </button>`
 
 const viewSidebar = (state: Model): View =>
-  html`<aside class="panel sans-serif similar ${state.status}">
+  html`<aside class="panel sans-serif similar simlinks">
     <h2 class="marked"><span>Similar</span></h2>
     ${viewQuery(state.query)} ${viewKeywords(state.result ? state.result.keywords : [])}
     ${viewSimilarResources(state.result ? state.result.similar : [])}

@@ -452,13 +452,6 @@ details > summary::-webkit-details-marker {
   border-radius: 3px;
 }
 
-.similar.badge {
-  background-color: var(--selection-color);
-}
-
-.siblinks.badge {
-}
-
 .badge {
   position: absolute;
   display: inline-block;
@@ -496,10 +489,11 @@ details > summary::-webkit-details-marker {
 
 .badge {
   transition: transform 0.1s ease;
+  opacity: 0.3;
 }
 
-.badge.active {
-  display: none;
+.badge:hover {
+  opacity: 0.8;
 }
 
 .badge.out:not(:hover) {
@@ -520,14 +514,6 @@ details > summary::-webkit-details-marker {
   margin: 3px;
   background-color: var(--active-link-text-color);
   pointer-events: none;
-}
-
-.siblinks.badge {
-  opacity: 0.3;
-}
-
-.siblinks.badge:hover {
-  opacity: 0.8;
 }
 
 :host-context(.ksp-browser-active) .viewport,

@@ -4,6 +4,7 @@ import {
   UIInbox,
   SimilarResponse,
   SimilarRequest,
+  Display,
   HoveredLink,
   SelectionChange,
 } from './mailbox'
@@ -36,12 +37,6 @@ const close = () => {
   if (view) {
     view.remove()
   }
-}
-
-enum Display {
-  Backlinks = 'backlinks',
-  Siblinks = 'siblinks',
-  Simlinks = 'simlinks',
 }
 
 type Model = {
@@ -83,8 +78,8 @@ const update = (message: Message, state: Model): [Model, null | Promise<null | M
     case 'Hide': {
       return [hide(state), null]
     }
-    case 'ShowSiblinks': {
-      return [showSiblinks(state), null]
+    case 'Show': {
+      return [show(state, message.show), null]
     }
     case 'InspectLinksRequest': {
       return [state, scan()]
@@ -238,8 +233,8 @@ const enable = (state: Model) => {
   }
 }
 
-const showSiblinks = (state: Model): Model => {
-  return { ...state, display: Display.Siblinks, mode: Mode.Active }
+const show = (state: Model, display: Display): Model => {
+  return { ...state, display, mode: Mode.Active }
 }
 
 const toggle = (state: Model): Model => {
@@ -341,7 +336,15 @@ const onClick = (event: MouseEvent): Message | null => {
   }
 
   if (target.classList.contains('badge')) {
-    return { type: 'ShowSiblinks' }
+    if (target.classList.contains('siblinks')) {
+      return { type: 'Show', show: Display.Siblinks }
+    }
+    if (target.classList.contains('simlinks')) {
+      return { type: 'Show', show: Display.Simlinks }
+    }
+    if (target.classList.contains('backlinks')) {
+      return { type: 'Show', show: Display.Backlinks }
+    }
   }
 
   if (target.classList.contains('frame')) {
