@@ -281,7 +281,7 @@ const view = (state: Model) =>
     </style>
     <link rel="stylesheet" href="${chrome.extension.getURL('ui.css')}" />
     <div class="${state.display}">
-      ${Thumb.view(state)} ${Backlinks.view(state)} ${Siblinks.view(state.siblinks)}
+      ${Thumb.view(state) && nothing} ${Backlinks.view(state)} ${Siblinks.view(state.siblinks)}
       ${Similar.view(state.similar)}
     </div>
     <main class="viewport">
