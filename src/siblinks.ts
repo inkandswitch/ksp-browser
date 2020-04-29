@@ -1,5 +1,5 @@
 import { html, nothing, View } from './view/html'
-import { Link, Tag, Ingest } from './protocol'
+import { Link, Tag, Ingest, SibLink } from './protocol'
 import { viewLinks } from './links'
 import { HoveredLink } from './mailbox'
 
@@ -10,19 +10,43 @@ const isEqualLink = (left: HoveredLink, right: HoveredLink): boolean => {
   return left.url === right.url
 }
 
-export type Model = {
-  hoveredLink: null | HoveredLink
-  activeSiblink: null | Siblink
-  sibLinks: null | Siblinks
+enum Status {
+  Over,
+  Out,
 }
 
-type ReadyModel = {
-  hoveredLink: HoveredLink
-  activeSiblink: Siblink
+type TargetLink = {
+  status: Status
+  link: HoveredLink
+}
+
+export type Model = {
+  siblinks: null | Siblinks
+  target: null | TargetLink
+}
+
+export const siblinksOf = ({ target, siblinks }: Model): Siblink | null =>
+  (siblinks && target && siblinks.get(target.link.url)) || null
+
+type ReadyState = {
+  status: Status
+  link: HoveredLink
+  siblinks: Siblink
+}
+
+const read = (state: Model): ReadyState | null => {
+  const siblinks = siblinksOf(state)
+  const { target } = state
+  if (target && siblinks) {
+    const { link, status } = target
+    return { link, siblinks, status }
+  } else {
+    return null
+  }
 }
 
 export const init = (): Model => {
-  return { hoveredLink: null, activeSiblink: null, sibLinks: null }
+  return { target: null, siblinks: null }
 }
 
 export const ingested = (state: Model, { sibLinks }: Ingest): Model => {
@@ -38,45 +62,50 @@ export const ingested = (state: Model, { sibLinks }: Ingest): Model => {
 
   return {
     ...state,
-    sibLinks: map,
-    activeSiblink: state.hoveredLink ? activeSiblink(map, state.hoveredLink) : null,
+    siblinks: map,
   }
 }
 
 export const hover = (state: Model, link: HoveredLink | null): Model => {
-  if (state.hoveredLink && link && isEqualLink(state.hoveredLink, link)) {
-    return state
-  } else if (link != null) {
-    return { ...state, hoveredLink: link, activeSiblink: activeSiblink(state.sibLinks, link) }
+  // If same link is hoverd do nothing
+  if (link) {
+    return { ...state, target: { link, status: Status.Over } }
   } else {
-    return { ...state, hoveredLink: null }
+    const { target } = state
+    if (target == null) {
+      return state
+    } else if (target.status !== Status.Out) {
+      return { ...state, target: { ...target, status: Status.Out } }
+    } else {
+      return state
+    }
   }
 }
 
-export const activeSiblink = (sibLinks: null | Siblinks, link: HoveredLink): Siblink | null =>
-  (sibLinks && sibLinks.get(link.url)) || null
-
 export const viewSidebar = (state: Model): View => {
-  const target = state.activeSiblink
-  const links = target ? target.links : []
-  const mode = target && state.hoveredLink ? 'active' : 'disabled'
+  const siblinks = siblinksOf(state)
+  const links = siblinks ? siblinks.links : []
+  const { target } = state
+  const mode = siblinks && target && target.status === Status.Over ? 'active' : 'disabled'
   return html`<aside class="panel sans-serif ${mode}">
     ${viewLinks(links, 'Siblinks')}
   </aside>`
 }
 
 export const viewTooltip = (state: Model): View => {
-  const { activeSiblink, hoveredLink } = state
-  if (activeSiblink && hoveredLink) {
-    return viewActiveTooltip({ activeSiblink, hoveredLink })
+  const { target } = state
+  const link = target && target.link
+  const siblinks = siblinksOf(state)
+  if (siblinks && link) {
+    return viewActiveTooltip(link, siblinks)
   } else {
-    return viewInactiveTooltip(state)
+    return viewInactiveTooltip()
   }
 }
 
-const viewInactiveTooltip = (state: Model): View => nothing
+const viewInactiveTooltip = (): View => nothing
 
-const viewActiveTooltip = ({ hoveredLink: { rect }, activeSiblink: { links } }: ReadyModel) =>
+const viewActiveTooltip = ({ rect }: HoveredLink, { links }: Siblink): View =>
   html`<dialog
     class="tooltip sans-serif siblinks"
     open
@@ -85,4 +114,19 @@ const viewActiveTooltip = ({ hoveredLink: { rect }, activeSiblink: { links } }: 
     ${viewLinks(links, 'Siblinks')}
   </dialog>`
 
-export const view = viewTooltip
+const viewBadge = (state: Model): View => {
+  // const data = read(state)
+  const data = state.target ? <any>state.target : null
+  return data ? showBadge(data) : hideBadge()
+}
+
+const hideBadge = (): View => nothing
+const showBadge = ({ link: { rect } }: ReadyState): View =>
+  html`<button
+    class="badge sans-serif siblinks"
+    style="top: ${rect.top + rect.height}px; left:${rect.left + rect.width / 2}px;"
+  >
+    <figure class="icon" />
+  </button>`
+
+export const view = viewBadge

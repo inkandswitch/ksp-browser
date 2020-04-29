@@ -15,6 +15,8 @@
   --link-text-color: #463f5c;
   --active-link-text-color: #000;
   --link-underscore-color: #a9b2d1;
+
+  --selection-color: rgb(177, 214, 252);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -441,4 +443,64 @@ details > summary::-webkit-details-marker {
   margin-right: 6px;
   float: left;
   border-radius: 3px;
+}
+
+.similar.badge {
+  background-color: var(--selection-color);
+}
+
+.siblinks.badge {
+}
+
+.badge {
+  position: absolute;
+  display: inline-block;
+  z-index: 99999993;
+  margin: 0;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  padding: 5px;
+  min-width: 18px;
+  min-height: 12px;
+  border: none;
+  border-radius: 3px;
+  transform: translateX(-50%) translateY(12px);
+  padding: 0;
+  font-family: var(--font);
+  font-size: 0.8em;
+}
+.badge::before {
+  content: '';
+  display: inline-block;
+  position: absolute;
+  z-index: -1;
+  width: 12px;
+  height: 12px;
+  left: 50%;
+  top: 1px;
+  transform: translateX(-50%) translateY(-50%) rotate(45deg);
+  background: inherit;
+}
+
+.badge .icon {
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  mask: url(icon-on.svg) 0px 0px;
+  -webkit-mask: url(icon-on.svg) 0px 0px;
+  mask-size: cover;
+  -webkit-mask-size: cover;
+  box-shadow: 0 0 18px rgba(100, 100, 100, 0.5);
+  border: none;
+  margin: 3px;
+  background-color: var(--active-link-text-color);
+}
+
+.siblinks.badge {
+  opacity: 0.3;
+  transition-delay: 0s;
+}
+
+.siblinks.badge:hover {
+  opacity: 0.8;
 }
