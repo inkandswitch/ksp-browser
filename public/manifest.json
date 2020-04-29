@@ -2,7 +2,7 @@
   "name": "context",
   "description": "Add context to the web through the Knowledge Server Protocol (KSP).",
   "version": "0.1",
-  "icons": { "144": "icon-on.png" },
+  "icons": { "144": "double-dagger.png" },
   "permissions": ["activeTab", "contextMenus", "*://*/*"],
   "background": {
     "scripts": ["background.js"],
@@ -20,8 +20,7 @@
     "ui.html",
     "ui.css",
     "content.css",
-    "icon-on.svg",
-    "icon-off.svg",
+    "double-dagger.svg",
     "md-icon.svg",
     "link-solid.svg",
     "file-alt-solid.svg"
@@ -29,7 +28,7 @@
   "browser_action": {
     "default_title": "Context",
     "default_icon": {
-      "144": "icon-on.png"
+      "144": "double-dagger.png"
     }
   },
   "commands": {

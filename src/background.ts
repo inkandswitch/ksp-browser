@@ -23,7 +23,7 @@ const onRequest = async (
       const count = resource.backLinks.length
       if (count > 0) {
         // chrome.browserAction.enable(tab!.id)
-        // chrome.browserAction.setIcon({ path: 'icon-on.png', tabId: tab!.id })
+        // chrome.browserAction.setIcon({ path: 'double-dagger.svg', tabId: tab!.id })
         // chrome.browserAction.setBadgeText({ text: `${count}`, tabId: tab!.id })
       }
 
