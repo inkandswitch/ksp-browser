@@ -25,7 +25,7 @@ export const getImageURL = (resource: Resource): string => {
         }
       }
       default: {
-        return chrome.extension.getURL('icon-on.svg')
+        return chrome.extension.getURL('double-dagger.svg')
       }
     }
   }

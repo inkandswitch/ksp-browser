@@ -289,8 +289,8 @@ a.keyword:hover,
   background-color: var(--bg-color);
   bottom: 10px;
   right: 10px;
-  mask: url(icon-on.svg) 0px 0px;
-  -webkit-mask: url(icon-on.svg) 0px 0px;
+  mask: url(double-dagger.svg) 0px 0px;
+  -webkit-mask: url(double-dagger.svg) 0px 0px;
   mask-size: cover;
   -webkit-mask-size: cover;
   box-shadow: 0 0 18px rgba(100, 100, 100, 0.5);
@@ -505,8 +505,8 @@ details > summary::-webkit-details-marker {
   border-radius: 50%;
   width: 22px;
   height: 22px;
-  mask: url(icon-on.svg) 0px 0px;
-  -webkit-mask: url(icon-on.svg) 0px 0px;
+  mask: url(double-dagger.svg) 0px 0px;
+  -webkit-mask: url(double-dagger.svg) 0px 0px;
   mask-size: cover;
   -webkit-mask-size: cover;
   box-shadow: 0 0 18px rgba(100, 100, 100, 0.5);
