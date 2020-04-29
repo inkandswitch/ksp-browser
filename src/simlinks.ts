@@ -121,13 +121,19 @@ const viewBadge = (state: Model): View => {
 }
 
 const hideBadge = (): View => nothing
-const showBadge = ({ query: { rect }, status }: Ready): View =>
+const showBadge = ({ query: { rect }, status, result }: Ready): View =>
   html`<button
     class="badge sans-serif simlinks ${status}"
-    style="top: ${rect.top + rect.height}px; left:${rect.left + rect.width / 2}px;"
+    style="top: ${rect.top + rect.height / 2}px; left:${rect.left + rect.width}px;"
   >
-    <figure class="icon" />
+    <span class="double-dagger">‡</span>${result.similar.length}
   </button>`
+
+const debug = ({ top, left, height, width }: Rect): View =>
+  html`<div
+    class="debug"
+    style="top:${top}px;left:${left}px;height:${height}px;width:${width}px"
+  ></div>`
 
 const viewSidebar = (state: Model): View =>
   html`<aside class="panel sans-serif simlinks">

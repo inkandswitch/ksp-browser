@@ -6,6 +6,7 @@
 
   --font: -apple-system, BlinkMacSystemFont, 'avenir next', avenir, helvetica, 'helvetica neue',
     ubuntu, roboto, noto, 'segoe ui', arial, sans-serif;
+  --code-font: Consolas, monaco, monospace;
   --font-size: 1.25rem;
 
   --bg-color: rgb(222, 225, 230);
@@ -454,20 +455,23 @@ details > summary::-webkit-details-marker {
   border-radius: 3px;
 }
 
+.double-dagger {
+  font-family: var(--code-font);
+}
+
 .badge {
   position: absolute;
   display: inline-block;
   z-index: 99999993;
   margin: 0;
   background-color: var(--bg-color);
-  color: var(--text-color);
-  padding: 5px;
+  color: var(--active-link-text-color);
+  padding: 2px 6px 2px 3px;
   min-width: 18px;
   min-height: 12px;
   border: none;
   border-radius: 3px;
-  transform: translateX(-50%) translateY(12px);
-  padding: 0;
+  transform: translateX(10px) translateY(-50%);
   font-family: var(--font);
   font-size: 0.8em;
   outline: none;
@@ -477,12 +481,16 @@ details > summary::-webkit-details-marker {
   display: inline-block;
   position: absolute;
   z-index: -1;
-  width: 12px;
-  height: 12px;
-  left: 50%;
-  top: 1px;
-  transform: translateX(-50%) translateY(-50%) rotate(45deg);
-  background: inherit;
+  width: 13px;
+  height: 13px;
+  left: 1px;
+  top: 50%;
+  transform: translateX(-100%) translateY(-50%);
+  background: transparent;
+  width: 0;
+  height: 0;
+  border: 9px solid transparent;
+  border-right-color: var(--bg-color);
 }
 
 :host-context(.ksp-browser-active) .badge {
@@ -495,7 +503,7 @@ details > summary::-webkit-details-marker {
 }
 
 .badge:hover {
-  opacity: 0.8;
+  opacity: 1;
 }
 
 .badge.out:not(:hover) {

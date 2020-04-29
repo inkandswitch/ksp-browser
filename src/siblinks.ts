@@ -120,12 +120,12 @@ const viewBadge = (state: Model): View => {
 }
 
 const hideBadge = (): View => nothing
-const showBadge = ({ link: { rect }, status }: ReadyState): View =>
+const showBadge = ({ link: { rect }, status, siblinks }: ReadyState): View =>
   html`<button
     class="badge sans-serif siblinks ${status}"
-    style="top: ${rect.top + rect.height}px; left:${rect.left + rect.width / 2}px;"
+    style="top: ${rect.top + rect.height / 2}px; left:${rect.left + rect.width}px;"
   >
-    <figure class="icon" />
+    <span class="double-dagger">‡</span>${siblinks.links.length}
   </button>`
 
 export const view = (state: Model): View => html`${viewBadge(state)}${viewSidebar(state)}`
