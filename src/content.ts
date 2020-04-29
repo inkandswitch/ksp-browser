@@ -11,7 +11,7 @@ import {
 import * as Protocol from './protocol'
 import { Program, Context } from './program'
 // No idea why just `from 'lit-html' does not seem to work here.
-import { html, renderView, nothing, View } from './view/html'
+import { html, renderView, nothing, View, ViewDriver, Viewer } from './view/html'
 import { md } from './remark'
 import { map } from './iterable'
 import { send, request } from './runtime'
@@ -291,17 +291,16 @@ const view = (state: Model) =>
       <div class="frame bottom"></div>
       <div class="frame center"></div>
     </main>
-    ${hackViewBody(state)}
+    ${rootView(state)}
   `
 
-const hackViewBody = (state: Model) => {
+const rootView = Viewer((state: Model) => (driver: ViewDriver): void => {
   if (state.mode === Mode.Active) {
     document.documentElement.classList.add('ksp-browser-active')
   } else {
     document.documentElement.classList.remove('ksp-browser-active')
   }
-  return nothing
-}
+})
 
 const onEvent = (event: Event): Message | null => {
   switch (event.type) {
