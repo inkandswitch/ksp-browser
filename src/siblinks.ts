@@ -11,8 +11,8 @@ const isEqualLink = (left: HoveredLink, right: HoveredLink): boolean => {
 }
 
 enum Status {
-  Over,
-  Out,
+  Over = 'over',
+  Out = 'out',
 }
 
 type TargetLink = {
@@ -87,7 +87,7 @@ export const viewSidebar = (state: Model): View => {
   const links = siblinks ? siblinks.links : []
   const { target } = state
   const mode = siblinks && target && target.status === Status.Over ? 'active' : 'disabled'
-  return html`<aside class="panel sans-serif ${mode}">
+  return html`<aside class="panel sans-serif siblinks">
     ${viewLinks(links, 'Siblinks')}
   </aside>`
 }
@@ -115,18 +115,17 @@ const viewActiveTooltip = ({ rect }: HoveredLink, { links }: Siblink): View =>
   </dialog>`
 
 const viewBadge = (state: Model): View => {
-  // const data = read(state)
-  const data = state.target ? <any>state.target : null
+  const data = read(state)
   return data ? showBadge(data) : hideBadge()
 }
 
 const hideBadge = (): View => nothing
-const showBadge = ({ link: { rect } }: ReadyState): View =>
+const showBadge = ({ link: { rect }, status }: ReadyState): View =>
   html`<button
-    class="badge sans-serif siblinks"
+    class="badge sans-serif siblinks ${status}"
     style="top: ${rect.top + rect.height}px; left:${rect.left + rect.width / 2}px;"
   >
     <figure class="icon" />
   </button>`
 
-export const view = viewBadge
+export const view = (state: Model): View => html`${viewBadge(state)}${viewSidebar(state)}`

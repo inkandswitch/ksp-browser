@@ -38,8 +38,16 @@ const close = () => {
   }
 }
 
+enum Display {
+  Backlinks = 'backlinks',
+  Siblinks = 'siblinks',
+  Simlinks = 'simlinks',
+}
+
 type Model = {
   mode: Mode
+  display: Display
+
   siblinks: Siblinks.Model
   resource: null | Protocol.Resource
   similar: Similar.Model
@@ -50,7 +58,13 @@ type Address = { tabId: number; frameId: number }
 
 const init = (): [Model, Promise<null | Message>] => {
   return [
-    { mode: Mode.Enabled, resource: null, siblinks: Siblinks.init(), similar: Similar.init() },
+    {
+      mode: Mode.Enabled,
+      display: Display.Backlinks,
+      resource: null,
+      siblinks: Siblinks.init(),
+      similar: Similar.init(),
+    },
     lookup(),
   ]
 }
@@ -65,6 +79,12 @@ const update = (message: Message, state: Model): [Model, null | Promise<null | M
     }
     case 'Toggle': {
       return [toggle(state), null]
+    }
+    case 'Hide': {
+      return [hide(state), null]
+    }
+    case 'ShowSiblinks': {
+      return [showSiblinks(state), null]
     }
     case 'InspectLinksRequest': {
       return [state, scan()]
@@ -218,15 +238,23 @@ const enable = (state: Model) => {
   }
 }
 
+const showSiblinks = (state: Model): Model => {
+  return { ...state, display: Display.Siblinks, mode: Mode.Active }
+}
+
 const toggle = (state: Model): Model => {
   switch (state.mode) {
     case Mode.Disabled:
-      return state
+      return { ...state, display: Display.Backlinks }
     case Mode.Enabled:
-      return { ...state, mode: Mode.Active }
+      return { ...state, mode: Mode.Active, display: Display.Backlinks }
     case Mode.Active:
-      return { ...state, mode: Mode.Enabled }
+      return { ...state, mode: Mode.Enabled, display: Display.Backlinks }
   }
+}
+
+const hide = (state: Model): Model => {
+  return { ...state, mode: Mode.Enabled }
 }
 
 const render = (context: Context<Model, Message>) => {
@@ -257,13 +285,16 @@ const view = (state: Model) =>
       }
     </style>
     <link rel="stylesheet" href="${chrome.extension.getURL('ui.css')}" />
-    ${Thumb.view(state)} ${Backlinks.view(state)} ${Siblinks.view(state.siblinks)}
-    ${Similar.view(state.similar)}
+    <div class="${state.display}">
+      ${Thumb.view(state)} ${Backlinks.view(state)} ${Siblinks.view(state.siblinks)}
+      ${Similar.view(state.similar)}
+    </div>
     <main class="viewport">
       <div class="frame top"></div>
       <div class="frame left"></div>
       <div class="frame right"></div>
       <div class="frame bottom"></div>
+      <div class="frame center"></div>
     </main>
     ${hackViewBody(state)}
   `
@@ -308,6 +339,15 @@ const onClick = (event: MouseEvent): Message | null => {
       return null
     }
   }
+
+  if (target.classList.contains('badge')) {
+    return { type: 'ShowSiblinks' }
+  }
+
+  if (target.classList.contains('frame')) {
+    return { type: 'Hide' }
+  }
+
   return null
 }
 

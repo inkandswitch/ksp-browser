@@ -41,6 +41,9 @@
 .panel.disabled {
 }
 
+:host:host-context(.ksp-browser-active) .siblinks .panel.siblinks,
+:host:host-context(.ksp-browser-active) .simlinks .panel.similar,
+:host:host-context(.ksp-browser-active) .backlinks .panel.backlinks,
 .thumb:hover + .panel,
 .panel:hover,
 .panel.active,
@@ -472,6 +475,7 @@ details > summary::-webkit-details-marker {
   padding: 0;
   font-family: var(--font);
   font-size: 0.8em;
+  outline: none;
 }
 .badge::before {
   content: '';
@@ -486,6 +490,23 @@ details > summary::-webkit-details-marker {
   background: inherit;
 }
 
+:host-context(.ksp-browser-active) .badge {
+  display: none;
+}
+
+.badge {
+  transition: transform 0.1s ease;
+}
+
+.badge.active {
+  display: none;
+}
+
+.badge.out:not(:hover) {
+  transition-delay: 0.3s;
+  opacity: 0;
+}
+
 .badge .icon {
   border-radius: 50%;
   width: 22px;
@@ -498,11 +519,11 @@ details > summary::-webkit-details-marker {
   border: none;
   margin: 3px;
   background-color: var(--active-link-text-color);
+  pointer-events: none;
 }
 
 .siblinks.badge {
   opacity: 0.3;
-  transition-delay: 0s;
 }
 
 .siblinks.badge:hover {
@@ -532,7 +553,6 @@ details > summary::-webkit-details-marker {
 .viewport .frame {
   position: absolute;
   background: var(--bg-color);
-  pointer-events: all;
 }
 
 .viewport .frame.top {
@@ -561,4 +581,11 @@ details > summary::-webkit-details-marker {
   top: -100vh;
   width: 100vw;
   height: 300vh;
+}
+
+.viewport .frame.center {
+  background: none;
+  width: 100vw;
+  height: 100vh;
+  box-shadow: rgba(0, 0, 0, 0.4) -50px 0 80px;
 }
