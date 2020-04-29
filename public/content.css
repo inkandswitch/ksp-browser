@@ -1,0 +1,15 @@
+:root {
+  overflow: hidden;
+}
+
+body {
+  transform: perspective(1000px) translate3d(0, 0, 0);
+  transition: transform 0.2s ease;
+  overflow: auto;
+  width: 100vw;
+  height: 100vh;
+}
+
+.ksp-browser-active body {
+  transform: perspective(1000px) translate3d(0, 0, -300px);
+}

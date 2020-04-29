@@ -47,12 +47,14 @@
 .similar.panel.ready {
   transition-delay: 0s;
   right: 0;
+
+  box-shadow: rgba(0, 0, 0, 0.8) -50px 0 80px;
 }
 
 .panel {
   right: -35em;
-  transition: right 0.15s ease-in;
-  transition-delay: 0.2s;
+  transition: right 0.15s cubic-bezier(0.65, 0.05, 0.36, 1), box-shadow 0.15s ease-in;
+  transition-delay: 0.1s;
   overflow: auto;
   width: 32em;
   height: 100vh;
@@ -65,6 +67,8 @@
   border-top: 1px solid var(--bg-border-color);
   display: flex;
   flex-direction: column;
+
+  box-shadow: rgba(0, 0, 0, 0.1) -50px 0 80px;
 }
 
 .tooltip {
@@ -503,4 +507,58 @@ details > summary::-webkit-details-marker {
 
 .siblinks.badge:hover {
   opacity: 0.8;
+}
+
+:host-context(.ksp-browser-active) .viewport,
+.viewport.active {
+  transform: perspective(1000px) translate3d(0, 0, -300px);
+  pointer-events: all;
+}
+
+.viewport {
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
+  z-index: 99999991;
+  pointer-events: none;
+  transform: perspective(1000px) translate3d(0, 0, 0);
+  transition: transform 0.2s ease;
+}
+
+.viewport .frame {
+  position: absolute;
+  background: var(--bg-color);
+  pointer-events: all;
+}
+
+.viewport .frame.top {
+  left: 0;
+  top: -100vh;
+  width: 100vw;
+  height: 100vh;
+}
+
+.viewport .frame.bottom {
+  left: 0;
+  top: 100vh;
+  width: 100vw;
+  height: 100vh;
+}
+
+.viewport .frame.left {
+  left: -100vw;
+  top: -100vh;
+  width: 100vw;
+  height: 300vh;
+}
+
+.viewport .frame.right {
+  left: 100vw;
+  top: -100vh;
+  width: 100vw;
+  height: 300vh;
 }

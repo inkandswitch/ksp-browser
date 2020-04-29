@@ -12,12 +12,14 @@
     {
       "matches": ["*://*/*"],
       "run_at": "document_start",
-      "js": ["content.js"]
+      "js": ["content.js"],
+      "css": ["content.css"]
     }
   ],
   "web_accessible_resources": [
     "ui.html",
     "ui.css",
+    "content.css",
     "icon-on.svg",
     "icon-off.svg",
     "md-icon.svg",

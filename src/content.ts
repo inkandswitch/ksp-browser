@@ -259,7 +259,23 @@ const view = (state: Model) =>
     <link rel="stylesheet" href="${chrome.extension.getURL('ui.css')}" />
     ${Thumb.view(state)} ${Backlinks.view(state)} ${Siblinks.view(state.siblinks)}
     ${Similar.view(state.similar)}
+    <main class="viewport">
+      <div class="frame top"></div>
+      <div class="frame left"></div>
+      <div class="frame right"></div>
+      <div class="frame bottom"></div>
+    </main>
+    ${hackViewBody(state)}
   `
+
+const hackViewBody = (state: Model) => {
+  if (state.mode === Mode.Active) {
+    document.documentElement.classList.add('ksp-browser-active')
+  } else {
+    document.documentElement.classList.remove('ksp-browser-active')
+  }
+  return nothing
+}
 
 const onEvent = (event: Event): Message | null => {
   switch (event.type) {
