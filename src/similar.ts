@@ -83,7 +83,7 @@ export const view = (state: Model): View =>
 
 const viewQuery = (query: Query | null) =>
   html`<div class="query">
-    <span class="name">similar</span><span class="input">${query ? query.input : ''}</span>
+    <span class="name">similar</span><span class="input">${query ? query.input.content : ''}</span>
   </div>`
 
 const viewKeywords = (keywords: string[]) => viewList(keywords || [], viewKeyword, ['keyword'])
