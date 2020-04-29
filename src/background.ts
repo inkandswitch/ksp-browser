@@ -191,7 +191,7 @@ const lookup = async (url: string): Promise<Protocol.Resource> =>
     (data) => data.resource
   )
 
-const similar = async (input: Protocol.InputSimilar): Promise<Protocol.SimilarResources> =>
+const similar = async (input: Protocol.InputSimilar): Promise<Protocol.Simlinks> =>
   ksp(
     {
       operationName: 'Similar',

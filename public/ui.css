@@ -42,12 +42,12 @@
 }
 
 :host:host-context(.ksp-browser-active) .siblinks .panel.siblinks,
-:host:host-context(.ksp-browser-active) .simlinks .panel.similar,
+:host:host-context(.ksp-browser-active) .simlinks .panel.simlinks,
 :host:host-context(.ksp-browser-active) .backlinks .panel.backlinks,
 .thumb:hover + .panel,
 .panel:hover,
 .panel.active,
-.similar.panel.ready {
+.simlinks.panel.ready {
   transition-delay: 0s;
   right: 0;
 
@@ -106,7 +106,7 @@
   display: none;
 }
 
-.tooltip ul.similar,
+.tooltip ul.simlink,
 .tooltip ul.link {
   max-height: 18em;
   width: 32em;
@@ -118,7 +118,7 @@
   border-radius: inherit;
 }
 
-.tooltip li.similar,
+.tooltip li.simlink,
 .tooltip li.link {
   padding: 0;
   margin: 0;
@@ -185,7 +185,7 @@ li {
   color: var(--link-text-color);
 }
 
-ul.similar,
+ul.simlink,
 ul.link {
   display: flex;
   justify-content: space-evenly;
@@ -194,7 +194,7 @@ ul.link {
   margin: 0;
 }
 
-li.similar,
+li.simlink,
 li.link {
   list-style: none;
   flex: 1;

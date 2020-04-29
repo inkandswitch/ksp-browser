@@ -18,7 +18,7 @@ import { send, request } from './runtime'
 import * as scanner from './scanner'
 import * as Siblinks from './siblinks'
 import * as Backlinks from './backlinks'
-import * as Similar from './similar'
+import * as Simlinks from './simlinks'
 import * as Thumb from './thumb'
 import * as URL from './url'
 import { Mode } from './mode'
@@ -45,7 +45,7 @@ type Model = {
 
   siblinks: Siblinks.Model
   resource: null | Protocol.Resource
-  similar: Similar.Model
+  simlinks: Simlinks.Model
 }
 
 type Message = AgentInbox | AgentMessage
@@ -58,7 +58,7 @@ const init = (): [Model, Promise<null | Message>] => {
       display: Display.Backlinks,
       resource: null,
       siblinks: Siblinks.init(),
-      similar: Similar.init(),
+      simlinks: Simlinks.init(),
     },
     lookup(),
   ]
@@ -103,10 +103,10 @@ const update = (message: Message, state: Model): [Model, null | Promise<null | M
       return [setHoveredLink(state, message.link), null]
     }
     case 'SelectionChange': {
-      return updateSimilar(state, message)
+      return updateSimlinks(state, message)
     }
     case 'SimilarResponse': {
-      return updateSimilar(state, message)
+      return updateSimlinks(state, message)
     }
   }
 }
@@ -127,12 +127,12 @@ const inspectLocalLinks = (state: Model, resource: Protocol.Resource) => {
   return { ...state, mode: Mode.Active, resource }
 }
 
-const updateSimilar = (
+const updateSimlinks = (
   state: Model,
   message: SimilarResponse | SelectionChange
 ): [Model, null | Promise<null | Message>] => {
-  const [similar, fx] = Similar.update(message, state.similar)
-  return [{ ...state, similar }, fx]
+  const [similar, fx] = Simlinks.update(message, state.simlinks)
+  return [{ ...state, simlinks: similar }, fx]
 }
 
 const ingest = async (): Promise<Message | null> => {
@@ -282,7 +282,7 @@ const view = (state: Model) =>
     <link rel="stylesheet" href="${chrome.extension.getURL('ui.css')}" />
     <div class="${state.display}">
       ${Thumb.view(state) && nothing} ${Backlinks.view(state)} ${Siblinks.view(state.siblinks)}
-      ${Similar.view(state.similar)}
+      ${Simlinks.view(state.simlinks)}
     </div>
     <main class="viewport">
       <div class="frame top"></div>

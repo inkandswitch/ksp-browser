@@ -39,12 +39,12 @@ export type Tag = {
   target: Resource
 }
 
-export type SimilarResources = {
+export type Simlinks = {
   keywords: string[]
-  similar: SimilarResource[]
+  similar: Simlink[]
 }
 
-export type SimilarResource = {
+export type Simlink = {
   resource: Resource
   score: number
 }

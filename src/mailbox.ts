@@ -71,7 +71,7 @@ export type SimilarRequest = {
 export type SimilarResponse = {
   type: 'SimilarResponse'
   id: number
-  similar: Protocol.SimilarResources
+  similar: Protocol.Simlinks
 }
 
 export type OpenRequest = {

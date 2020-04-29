@@ -1,5 +1,5 @@
 import { html, nothing, View } from './view/html'
-import { SimilarResources, SimilarResource, InputSimilar } from './protocol'
+import { Simlinks, Simlink, InputSimilar } from './protocol'
 import { viewList } from './view/list'
 import { view as viewResource } from './view/resource'
 import { request } from './runtime'
@@ -23,7 +23,7 @@ enum Status {
 
 type Idle = { status: Status.Idle; query: null; result: null }
 type Pending = { status: Status.Pending; query: Query; result: null }
-type Ready = { status: Status.Ready; query: Query; result: SimilarResources }
+type Ready = { status: Status.Ready; query: Query; result: Simlinks }
 
 export type Query = {
   id: number
@@ -130,10 +130,10 @@ const showBadge = ({ query: { rect }, status }: Ready): View =>
   </button>`
 
 const viewSidebar = (state: Model): View =>
-  html`<aside class="panel sans-serif similar simlinks">
-    <h2 class="marked"><span>Similar</span></h2>
+  html`<aside class="panel sans-serif simlinks">
+    <h2 class="marked"><span>Simlinks</span></h2>
     ${viewQuery(state.query)} ${viewKeywords(state.result ? state.result.keywords : [])}
-    ${viewSimilarResources(state.result ? state.result.similar : [])}
+    ${viewSimlinks(state.result ? state.result.similar : [])}
   </aside> `
 
 const viewTooltip = (state: Model): View => {
@@ -150,11 +150,11 @@ const viewInactiveTooltip = (state: Idle | Pending) => nothing
 
 const viewActiveTooltip = ({ query: { rect }, result }: Ready) =>
   html`<dialog
-    class="tooltip sans-serif similar"
+    class="tooltip sans-serif simlinks"
     open
     style="top: ${rect.top + rect.height}px; left:${rect.left + rect.width}px;"
   >
-    ${viewSimilarResources(result.similar)}
+    ${viewSimlinks(result.similar)}
   </dialog>`
 
 const viewQuery = (query: Query | null) =>
@@ -165,6 +165,5 @@ const viewQuery = (query: Query | null) =>
 const viewKeywords = (keywords: string[]) => viewList(keywords || [], viewKeyword, ['keyword'])
 const viewKeyword = (name: string) => html`<a href="#${name}" class="keyword">${name}</a>`
 
-const viewSimilarResources = (entries: SimilarResource[]): View =>
-  viewList(entries, viewSimilarResource, ['similar'])
-const viewSimilarResource = (entry: SimilarResource): View => viewResource(entry.resource)
+const viewSimlinks = (entries: Simlink[]): View => viewList(entries, viewSimlink, ['simlink'])
+const viewSimlink = (entry: Simlink): View => viewResource(entry.resource)
