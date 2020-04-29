@@ -311,8 +311,10 @@ a.keyword:hover,
 
 .thumb.disabled {
   transform: scale(1);
-  mask: url(icon-off.svg) 0px 0px;
-  -webkit-mask: url(icon-off.svg) 0px 0px;
+  /* TODO: Show different icon to signify no connections ? */
+  opacity: 0.5;
+  mask: url(double-dagger.svg) 0px 0px;
+  -webkit-mask: url(double-dagger.svg) 0px 0px;
   mask-size: cover;
   -webkit-mask-size: cover;
   pointer-events: none;

@@ -17,7 +17,7 @@ const onRequest = async (
     }
     case 'LookupRequest': {
       // chrome.browserAction.disable(tab!.id!)
-      // chrome.browserAction.setIcon({ path: 'icon-off.png', tabId: tab!.id })
+      // chrome.browserAction.setIcon({ path: 'double-dagger.png', tabId: tab!.id })
       // chrome.browserAction.setBadgeText({ text: ``, tabId: tab!.id })
       const resource = await lookup(message.lookup)
       const count = resource.backLinks.length
@@ -291,7 +291,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // chrome.contextMenus.onClicked.addListener(onContextMenuAction)
 
 // chrome.browserAction.disable()
-// chrome.browserAction.setIcon({ path: 'icon-off.png' })
+// chrome.browserAction.setIcon({ path: 'double-dagger.png' })
 // chrome.browserAction.setBadgeBackgroundColor({ color: '#000' })
 chrome.browserAction.onClicked.addListener((tab) => sendAgentMessage(tab, { type: 'Toggle' }))
 chrome.commands.onCommand.addListener(<(command: string) => void>onCommand)
