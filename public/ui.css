@@ -46,10 +46,8 @@
 :host:host-context(.ksp-browser-active) .simlinks .panel.simlinks,
 :host:host-context(.ksp-browser-active) .backlinks .panel.backlinks,
 .thumb:hover + .panel,
-.panel:hover,
 .panel.active,
 .simlinks.panel.ready {
-  transition-delay: 0s;
   right: 0;
 
   box-shadow: rgba(0, 0, 0, 0.8) -50px 0 80px;
@@ -58,7 +56,6 @@
 .panel {
   right: -35em;
   transition: right 0.15s cubic-bezier(0.65, 0.05, 0.36, 1), box-shadow 0.15s ease-in;
-  transition-delay: 0.1s;
   overflow: auto;
   width: 32em;
   height: 100vh;
@@ -76,8 +73,8 @@
 }
 
 .tooltip {
+  display: block;
   position: absolute;
-  display: inline-block;
   z-index: 99999993;
   margin: 0;
   background: var(--bg-color);
@@ -101,6 +98,18 @@
   top: 0;
   transform: translateX(-50%) translateY(-50%) rotate(45deg);
   background: inherit;
+}
+
+:host-context(.ksp-browser-active) .tooltip {
+  animation: disappear 0s ease-out 0s forwards !important;
+}
+
+.tooltip[open] {
+  animation: appear 0.1s ease-in 0s forwards;
+}
+
+.tooltip:not(:hover):not([open]) {
+  animation: disappear 0.1s ease-out 0.2s forwards;
 }
 
 .tooltip > h2 {
@@ -331,6 +340,28 @@ a.keyword:hover,
   }
 }
 
+@keyframes appear {
+  0% {
+    opacity: 0;
+    pointer-events: none;
+  }
+  100% {
+    opacity: 1;
+    pointer-events: all;
+  }
+}
+
+@keyframes disappear {
+  0% {
+    opacity: 1;
+    pointer-events: all;
+  }
+  100% {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
 @keyframes spin {
   0% {
     -webkit-transform: rotate(0deg);
@@ -493,10 +524,6 @@ details > summary::-webkit-details-marker {
   border-right-color: var(--bg-color);
 }
 
-:host-context(.ksp-browser-active) .badge {
-  display: none;
-}
-
 .badge {
   transition: transform 0.1s ease;
   opacity: 0.3;
@@ -529,7 +556,6 @@ details > summary::-webkit-details-marker {
 :host-context(.ksp-browser-active) .viewport,
 .viewport.active {
   transform: perspective(1000px) translate3d(0, 0, -300px);
-  pointer-events: all;
 }
 
 .viewport {
@@ -546,9 +572,18 @@ details > summary::-webkit-details-marker {
   transition: transform 0.2s ease;
 }
 
+:host-context(.ksp-browser-active) .overlay {
+  opacity: 0;
+}
+
+.overlay {
+  pointer-events: all;
+}
+
 .viewport .frame {
   position: absolute;
   background: var(--bg-color);
+  pointer-events: all;
 }
 
 .viewport .frame.top {

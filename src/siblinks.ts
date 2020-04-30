@@ -95,11 +95,9 @@ export const viewSidebar = (state: Model): View => {
 }
 
 export const viewTooltip = (state: Model): View => {
-  const { target } = state
-  const link = target && target.link
-  const siblinks = siblinksOf(state)
-  if (siblinks && link) {
-    return viewActiveTooltip(link, siblinks)
+  const data = read(state)
+  if (data) {
+    return viewActiveTooltip(data)
   } else {
     return viewInactiveTooltip()
   }
@@ -107,13 +105,13 @@ export const viewTooltip = (state: Model): View => {
 
 const viewInactiveTooltip = (): View => nothing
 
-const viewActiveTooltip = ({ rect }: HoveredLink, { links }: Siblink): View =>
+const viewActiveTooltip = ({ status, link: { rect }, siblinks }: ReadyState): View =>
   html`<dialog
     class="tooltip sans-serif siblinks"
-    open
+    ?open=${status === Status.Over}
     style="top: ${rect.top + rect.height}px; left:${rect.left + rect.width / 2}px;"
   >
-    ${viewLinks(links, 'Siblinks')}
+    ${viewLinks(siblinks.links, 'Siblinks')}
   </dialog>`
 
 const viewBadge = (state: Model): View => {
@@ -141,7 +139,6 @@ const viewLinkAnnotations = Viewer((state: Model) => (driver: ViewDriver) => {
         const fragment = document.createDocumentFragment()
         renderView(viewLinkAnnotation(siblink, url), fragment)
         link.parentElement!.insertBefore(fragment, link.nextSibling)
-        // link.append(fragment)
       }
     }
   }
@@ -149,7 +146,15 @@ const viewLinkAnnotations = Viewer((state: Model) => (driver: ViewDriver) => {
 
 const viewLinkAnnotation = (siblink: Siblink, url: string): View =>
   html`<sup class="ksp-browser-annotation">
-    <a class="ksp-browser-siblinks" href="${url}">[‡${siblink.links.length}]</a>
+    <a class="ksp-browser-siblinks" href="${url}" data-siblinks=${siblink.links.length}
+      >[‡${siblink.links.length}]</a
+    >
   </sup>`
 
-export const view = (state: Model): View => html`${viewSidebar(state)}${viewLinkAnnotations(state)}`
+export const view = (state: Model): View => viewSidebar(state)
+
+export const viewOverlay = (state: Model): View =>
+  html`<!-- annotations -->
+    ${viewLinkAnnotations(state)}
+    <!-- tootip -->
+    ${viewTooltip(state)}`

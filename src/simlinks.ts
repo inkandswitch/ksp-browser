@@ -113,7 +113,9 @@ const toReady = (state: Model): Ready | null => {
   }
 }
 
-export const view = (state: Model): View => html`${viewBadge(state)}${viewSidebar(state)}`
+export const view = (state: Model): View => viewSidebar(state)
+
+export const viewOverlay = (state: Model): View => viewBadge(state)
 
 const viewBadge = (state: Model): View => {
   const data = toReady(state)

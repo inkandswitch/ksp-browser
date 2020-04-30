@@ -259,7 +259,7 @@ const render = (context: Context<Model, Message>) => {
       document.createElement('cont-ext')
     )
     let shadowRoot = node.attachShadow({ mode: 'open' })
-    renderView(view(context.state), shadowRoot)
+    renderView(view(context.state), shadowRoot, { eventContext: <any>context })
     const target = document.documentElement.appendChild(node)
     shadowRoot.addEventListener('click', context, { passive: true })
     document.addEventListener('mouseover', context, { passive: true })
@@ -282,7 +282,13 @@ const view = (state: Model) =>
     </style>
     <link rel="stylesheet" href="${chrome.extension.getURL('ui.css')}" />
     <div class="${state.display}">
-      ${Thumb.view(state) && nothing} ${Backlinks.view(state)} ${Siblinks.view(state.siblinks)}
+      <!-- Thumb -->
+      ${Thumb.view(state) && nothing}
+      <!-- Backlinks -->
+      ${Backlinks.view(state)}
+      <!-- Siblinks -->
+      ${Siblinks.view(state.siblinks)}
+      <!-- Simlinks -->
       ${Simlinks.view(state.simlinks)}
     </div>
     <main class="viewport">
@@ -290,7 +296,13 @@ const view = (state: Model) =>
       <div class="frame left"></div>
       <div class="frame right"></div>
       <div class="frame bottom"></div>
-      <div class="frame center"></div>
+      <div class="overlay">
+        ${Thumb.view(state) && nothing}
+        <!-- Siblinks -->
+        ${Siblinks.viewOverlay(state.siblinks)}
+        <!-- Similnks -->
+        ${Simlinks.viewOverlay(state.simlinks)}
+      </div>
     </main>
     ${rootView(state)}
   `
@@ -342,10 +354,6 @@ const onClick = (event: MouseEvent): Message | null => {
     return { type: 'Show', show: Display.Siblinks }
   }
 
-  if (target.classList.contains('frame')) {
-    return { type: 'Hide' }
-  }
-
   if (target.localName === 'a') {
     const anchor = <HTMLAnchorElement>target
     if (!anchor.href.startsWith('http')) {
@@ -354,6 +362,12 @@ const onClick = (event: MouseEvent): Message | null => {
     } else {
       return null
     }
+  }
+
+  if (document.body.contains(target) || target.classList.contains('frame')) {
+    return { type: 'Hide' }
+  } else {
+    return null
   }
 
   return null
@@ -378,7 +392,7 @@ const onSelectionChange = (event: Event): Message | null => {
 
 const onMouseOver = (event: MouseEvent): Message | null => {
   const target = <HTMLElement>event.target
-  if (target.localName === 'a') {
+  if (target.localName === 'a' && target.hasAttribute('data-siblinks')) {
     const anchor = <HTMLAnchorElement>target
     const { top, left, height, width } = anchor.getBoundingClientRect()
     const rect = { top: top + window.scrollY, left: window.scrollX + left, height, width }
@@ -389,7 +403,7 @@ const onMouseOver = (event: MouseEvent): Message | null => {
 
 const onMouseOut = (event: MouseEvent): Message | null => {
   const target = <HTMLElement>event.target
-  if (target.localName === 'a') {
+  if (target.localName === 'a' && target.hasAttribute('data-siblinks')) {
     const anchor = <HTMLAnchorElement>target
     return { type: 'LinkHover', link: null }
   }
