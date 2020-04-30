@@ -488,6 +488,7 @@ details > summary::-webkit-details-marker {
 
 .double-dagger {
   font-family: var(--code-font);
+  pointer-events: none;
 }
 
 .badge {
