@@ -13,3 +13,38 @@ body {
 .ksp-browser-active body {
   transform: perspective(1000px) translate3d(0, 0, -300px);
 }
+
+.ksp-browser-annotation sup::before {
+  content: '[';
+}
+.ksp-browser-annotation sup::after {
+  content: ']';
+}
+
+.ksp-browser-annotation,
+.ksp-browser-annotation .ksp-browser-siblinks {
+  position: relative;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-decoration: none;
+  border: none !important;
+}
+
+.ksp-browser-annotation {
+  font-size: 80%;
+  white-space: nowrap;
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  direction: ltr;
+  cursor: pointer;
+}
+
+.ksp-browser-annotation .ksp-browser-siblinks {
+  font-family: sans-serif;
+  cursor: pointer;
+}
+
+.ksp-browser-annotation .ksp-browser-siblinks:hover {
+  text-decoration: underline;
+}

@@ -9,7 +9,7 @@ export const read = (target: HTMLDocument): protocol.InputResource => {
 
   return {
     url: URL.from(document.URL, { hash: '' }).href,
-    links: readLinks(document),
+    links: [...readLinks(document)],
     content: readContent(document),
     cid: null,
     icon,
@@ -39,10 +39,26 @@ const IGNORED_PROTOCOLS = new Set([
   'chrome-extension:',
 ])
 
-const readLinks = (document: HTMLDocument): protocol.InputLink[] => {
+const readLinks = function* (document: HTMLDocument): Iterable<protocol.InputLink> {
+  const baseURL = URL.from(document.URL, { hash: '', search: '' })
+
+  for (const element of scanLinks(document)) {
+    const targetURL = URL.parse(element.href, baseURL)
+    yield {
+      kind: protocol.LinkKind.INLINE,
+      targetURL: targetURL.href,
+      identifier: null,
+      name: element.text.trim(),
+      title: element.title,
+      referrerFragment: readLinkContext(element),
+      referrerLocation: null,
+    }
+  }
+}
+
+export const scanLinks = function* (document: HTMLDocument): Iterable<HTMLAnchorElement> {
   const baseURL = URL.from(document.URL, { hash: '', search: '' })
   const elements: Iterable<HTMLAnchorElement> = <any>document.body.querySelectorAll('a[href]')
-  const links = []
 
   for (const element of elements) {
     const targetURL = URL.parse(element.href, baseURL)
@@ -53,19 +69,9 @@ const readLinks = (document: HTMLDocument): protocol.InputLink[] => {
       !IGNORED_PROTOCOLS.has(targetURL.protocol) &&
       (baseURL.origin !== targetURL.origin || baseURL.pathname != targetURL.pathname)
     ) {
-      links.push({
-        kind: protocol.LinkKind.INLINE,
-        targetURL: targetURL.href,
-        identifier: null,
-        name: element.text.trim(),
-        title: element.title,
-        referrerFragment: readLinkContext(element),
-        referrerLocation: null,
-      })
+      yield element
     }
   }
-
-  return links
 }
 
 const isSameDocumentURL = (target: URL, source: URL) =>

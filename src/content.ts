@@ -265,6 +265,7 @@ const render = (context: Context<Model, Message>) => {
     document.addEventListener('mouseover', context, { passive: true })
     document.addEventListener('mouseout', context, { passive: true })
     document.addEventListener('selectionchange', context, { passive: true })
+    document.addEventListener('click', context)
 
     target.program = context
   } else {
@@ -324,16 +325,6 @@ const onEvent = (event: Event): Message | null => {
 
 const onClick = (event: MouseEvent): Message | null => {
   const target = <HTMLElement>event.target
-  if (target.localName === 'a') {
-    const anchor = <HTMLAnchorElement>target
-    if (!anchor.href.startsWith('http')) {
-      event.preventDefault()
-      return { type: 'OpenRequest', url: anchor.href }
-    } else {
-      return null
-    }
-  }
-
   if (target.classList.contains('badge')) {
     if (target.classList.contains('siblinks')) {
       return { type: 'Show', show: Display.Siblinks }
@@ -346,8 +337,23 @@ const onClick = (event: MouseEvent): Message | null => {
     }
   }
 
+  if (target.classList.contains('ksp-browser-siblinks')) {
+    event.preventDefault()
+    return { type: 'Show', show: Display.Siblinks }
+  }
+
   if (target.classList.contains('frame')) {
     return { type: 'Hide' }
+  }
+
+  if (target.localName === 'a') {
+    const anchor = <HTMLAnchorElement>target
+    if (!anchor.href.startsWith('http')) {
+      event.preventDefault()
+      return { type: 'OpenRequest', url: anchor.href }
+    } else {
+      return null
+    }
   }
 
   return null

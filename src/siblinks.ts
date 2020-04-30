@@ -1,7 +1,9 @@
-import { html, nothing, View } from './view/html'
+import { html, nothing, View, Viewer, ViewDriver, renderView } from './view/html'
 import { Link, Tag, Ingest, SibLink } from './protocol'
 import { viewLinks } from './links'
 import { HoveredLink } from './mailbox'
+import { scanLinks } from './scanner'
+import * as URL from './url'
 
 type Siblink = { links: Link[]; tags: Tag[] }
 type Siblinks = Map<string, Siblink>
@@ -128,4 +130,26 @@ const showBadge = ({ link: { rect }, status, siblinks }: ReadyState): View =>
     <span class="double-dagger">‡</span>${siblinks.links.length}
   </button>`
 
-export const view = (state: Model): View => html`${viewBadge(state)}${viewSidebar(state)}`
+const viewLinkAnnotations = Viewer((state: Model) => (driver: ViewDriver) => {
+  const { siblinks } = state
+  if (siblinks && !driver.value) {
+    driver.setValue(html`<!-- DONE -->`)
+    for (const link of scanLinks(document)) {
+      const url = URL.from(link.href, { hash: '' }).href
+      const siblink = siblinks.get(url)
+      if (siblink) {
+        const fragment = document.createDocumentFragment()
+        renderView(viewLinkAnnotation(siblink, url), fragment)
+        link.parentElement!.insertBefore(fragment, link.nextSibling)
+        // link.append(fragment)
+      }
+    }
+  }
+})
+
+const viewLinkAnnotation = (siblink: Siblink, url: string): View =>
+  html`<sup class="ksp-browser-annotation">
+    <a class="ksp-browser-siblinks" href="${url}">[‡${siblink.links.length}]</a>
+  </sup>`
+
+export const view = (state: Model): View => html`${viewSidebar(state)}${viewLinkAnnotations(state)}`
