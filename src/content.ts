@@ -296,6 +296,7 @@ const view = (state: Model) =>
       <div class="frame left"></div>
       <div class="frame right"></div>
       <div class="frame bottom"></div>
+      <div class="frame center"></div>
       <div class="overlay">
         ${Thumb.view(state) && nothing}
         <!-- Siblinks -->
