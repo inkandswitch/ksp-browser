@@ -1,9 +1,50 @@
 /**
  * Return the best position to show the tooltip for the selection.
  */
-export const getSelectionTooltipRect = (selection: Selection) => {
+export const getSelectionTooltipRect = (selection: Selection): null | DOMRect => {
   const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null
-  return range ? getTextBoundingBoxes(range).pop() || null : null
+  // return range ? getTextBoundingBoxes(range).pop() || null : null
+  if (range) {
+    const node = selection.focusNode!
+    const rects = range.getClientRects()
+    const direction = isSelectionBackwards(selection, range) ? -1 : 1
+    const rect = resolveRect(
+      node.nodeType === Node.ELEMENT_NODE ? <HTMLElement>node : <HTMLElement>node.parentElement!,
+      direction < 0 ? rects[0] : rects[rects.length - 1]
+    )
+
+    if (direction > 0) {
+      return rect
+    } else {
+      return new DOMRect(rect.left + rect.width, rect.top, rect.width * -1, rect.height)
+    }
+  }
+  return null
+}
+
+/**
+ * Returns true if the start point of a selection occurs after the end point,
+ * in document order.
+ */
+function isSelectionBackwards(selection: Selection, range: Range) {
+  if (selection.focusNode === selection.anchorNode) {
+    return selection.focusOffset < selection.anchorOffset
+  }
+
+  return range.startContainer === selection.focusNode
+}
+
+export const resolveRect = (element: HTMLElement, rect: DOMRect): DOMRect => {
+  const window = element.ownerDocument && element.ownerDocument.defaultView
+  const { scrollY, scrollX } = window || { scrollX: 0, scrollY: 0 }
+  let node: HTMLElement | null = element
+  let { top, left, width, height } = rect
+  while (node) {
+    top += node.scrollTop || 0
+    left += node.scrollLeft || 0
+    node = <HTMLElement | null>node.offsetParent
+  }
+  return new DOMRect(left + scrollX, top + scrollY, width, height)
 }
 
 /**

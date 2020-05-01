@@ -22,7 +22,7 @@ import * as Simlinks from './simlinks'
 import * as Thumb from './thumb'
 import * as URL from './url'
 import { Mode } from './mode'
-import { getSelectionTooltipRect } from './dom/selection'
+import { getSelectionTooltipRect, resolveRect } from './dom/selection'
 
 const onUIMessage = (message: MessageEvent) => {
   switch (message.type) {
@@ -253,14 +253,14 @@ const hide = (state: Model): Model => {
 }
 
 const render = (context: Context<Model, Message>) => {
-  let node = document.querySelector('cont-ext')
-  if (!node) {
-    const node = <HTMLElement & { program: Context<Model, Message> }>(
-      document.createElement('cont-ext')
+  let ui = document.querySelector('double-dagger-ui')
+  if (!ui) {
+    const ui = <HTMLElement & { program: Context<Model, Message> }>(
+      document.createElement('double-dagger-ui')
     )
-    let shadowRoot = node.attachShadow({ mode: 'open' })
+    let shadowRoot = ui.attachShadow({ mode: 'open' })
     renderView(view(context.state), shadowRoot, { eventContext: <any>context })
-    const target = document.documentElement.appendChild(node)
+    const target = document.documentElement.appendChild(ui)
     shadowRoot.addEventListener('click', context, { passive: true })
     document.addEventListener('mouseover', context, { passive: true })
     document.addEventListener('mouseout', context, { passive: true })
@@ -269,7 +269,20 @@ const render = (context: Context<Model, Message>) => {
 
     target.program = context
   } else {
-    renderView(view(context.state), node.shadowRoot!)
+    renderView(view(context.state), ui.shadowRoot!)
+  }
+
+  let overlay = document.querySelector('double-dagger-overlay')
+  if (overlay) {
+    renderView(viewOverlay(context.state), overlay.shadowRoot!)
+  } else if (document.body) {
+    const overlay = <HTMLElement & { program: Context<Model, Message> }>(
+      document.createElement('double-dagger-overlay')
+    )
+    let shadowRoot = overlay.attachShadow({ mode: 'open' })
+    renderView(viewOverlay(context.state), shadowRoot, { eventContext: <any>context })
+    const target = document.body.appendChild(overlay)
+    shadowRoot.addEventListener('click', context)
   }
 }
 
@@ -297,15 +310,18 @@ const view = (state: Model) =>
       <div class="frame right"></div>
       <div class="frame bottom"></div>
       <div class="frame center"></div>
-      <div class="overlay">
-        ${Thumb.view(state) && nothing}
-        <!-- Siblinks -->
-        ${Siblinks.viewOverlay(state.siblinks)}
-        <!-- Similnks -->
-        ${Simlinks.viewOverlay(state.simlinks)}
-      </div>
     </main>
     ${rootView(state)}
+  `
+
+const viewOverlay = (state: Model) =>
+  html`
+    <link rel="stylesheet" href="${chrome.extension.getURL('ui.css')}" />
+    ${Thumb.view(state) && nothing}
+    <!-- Siblinks -->
+    ${Siblinks.viewOverlay(state.siblinks)}
+    <!-- Similnks -->
+    ${Simlinks.viewOverlay(state.simlinks)}
   `
 
 const rootView = Viewer((state: Model) => (driver: ViewDriver): void => {
@@ -338,7 +354,9 @@ const onEvent = (event: Event): Message | null => {
 
 const onClick = (event: MouseEvent): Message | null => {
   const target = <HTMLElement>event.target
-  if (target.classList.contains('badge')) {
+  if (target.classList.contains('badge') || target.classList.contains('bubble')) {
+    event.preventDefault()
+    event.stopPropagation()
     if (target.classList.contains('siblinks')) {
       return { type: 'Show', show: Display.Siblinks }
     }
@@ -382,8 +400,7 @@ const onSelectionChange = (event: MouseEvent): Message | null => {
   if (content != '') {
     const url = URL.from(document.URL, { hash: '' }).href
     // const { top, left, width, height } = range!.getBoundingClientRect()
-    const { top, left, width, height } = <DOMRect>getSelectionTooltipRect(selection!)
-    const rect = { top: top + window.scrollY, left: left + window.scrollX, width, height }
+    const rect = <DOMRect>getSelectionTooltipRect(selection!)
     const id = timeStamp
     return { type: 'SelectionChange', data: { content, url, rect, id } }
   } else {
@@ -395,7 +412,8 @@ const onMouseOver = (event: MouseEvent): Message | null => {
   const target = <HTMLElement>event.target
   if (target.localName === 'a' && target.hasAttribute('data-siblinks')) {
     const anchor = <HTMLAnchorElement>target
-    const { top, left, height, width } = anchor.getBoundingClientRect()
+    const { top, left, height, width } = resolveRect(anchor, anchor.getBoundingClientRect())
+
     const rect = { top: top + window.scrollY, left: window.scrollX + left, height, width }
     return { type: 'LinkHover', link: { url: anchor.href, rect } }
   }

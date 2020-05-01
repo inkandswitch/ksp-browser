@@ -89,7 +89,7 @@ export const viewSidebar = (state: Model): View => {
   const links = siblinks ? siblinks.links : []
   const { target } = state
   const mode = siblinks && target && target.status === Status.Over ? 'active' : 'disabled'
-  return html`<aside class="panel sans-serif siblinks">
+  return html`<aside class="panel siblinks">
     ${viewLinks(links, 'Siblinks')}
   </aside>`
 }
@@ -107,7 +107,7 @@ const viewInactiveTooltip = (): View => nothing
 
 const viewActiveTooltip = ({ status, link: { rect }, siblinks }: ReadyState): View =>
   html`<dialog
-    class="tooltip sans-serif siblinks"
+    class="tooltip siblinks"
     ?open=${status === Status.Over}
     style="top: ${rect.top + rect.height}px; left:${rect.left + rect.width / 2}px;"
   >
@@ -122,7 +122,7 @@ const viewBadge = (state: Model): View => {
 const hideBadge = (): View => nothing
 const showBadge = ({ link: { rect }, status, siblinks }: ReadyState): View =>
   html`<button
-    class="badge sans-serif siblinks ${status}"
+    class="badge siblinks ${status}"
     style="top: ${rect.top + rect.height / 2}px; left:${rect.left + rect.width}px;"
   >
     <span class="double-dagger">‡</span>${siblinks.links.length}

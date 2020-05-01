@@ -115,7 +115,11 @@ const toReady = (state: Model): Ready | null => {
 
 export const view = (state: Model): View => viewSidebar(state)
 
-export const viewOverlay = (state: Model): View => viewBadge(state)
+export const viewOverlay = (state: Model): View =>
+  html`<!-- bubble -->
+    ${viewBadge(state)}
+    <!-- tooltip -->
+    ${viewTooltip(state)}`
 
 const viewBadge = (state: Model): View => {
   const data = toReady(state)
@@ -125,20 +129,22 @@ const viewBadge = (state: Model): View => {
 const hideBadge = (): View => nothing
 const showBadge = ({ query: { rect }, status, result }: Ready): View =>
   html`<button
-    class="badge sans-serif simlinks ${status}"
-    style="top: ${rect.top + rect.height / 2}px; left:${rect.left + rect.width}px;"
+    class="bubble simlinks ${rect.width < 0 ? 'backward' : 'forward'} ${status}"
+    style="top:${rect.top}px; left:${rect.width < 0
+      ? rect.left
+      : rect.left + rect.width}px; height:${rect.height}px"
   >
-    <span class="double-dagger">‡</span>${result.similar.length}
+    <div class="summary">‡${result.similar.length}</div>
   </button>`
 
 const debug = ({ top, left, height, width }: Rect): View =>
   html`<div
     class="debug"
-    style="top:${top}px;left:${left}px;height:${height}px;width:${width}px"
+    style="top:${top}px;left:${left}px;height:${height}px;width:${Math.abs(width)}px"
   ></div>`
 
 const viewSidebar = (state: Model): View =>
-  html`<aside class="panel sans-serif simlinks">
+  html`<aside class="panel simlinks">
     <h2 class="marked"><span>Simlinks</span></h2>
     ${viewQuery(state.query)} ${viewKeywords(state.result ? state.result.keywords : [])}
     ${viewSimlinks(state.result ? state.result.similar : [])}
@@ -158,9 +164,10 @@ const viewInactiveTooltip = (state: Idle | Pending) => nothing
 
 const viewActiveTooltip = ({ query: { rect }, result }: Ready) =>
   html`<dialog
-    class="tooltip sans-serif simlinks"
-    open
-    style="top: ${rect.top + rect.height}px; left:${rect.left + rect.width}px;"
+    class="tooltip simlinks"
+    style="top: ${rect.top + rect.height}px; left:${rect.width < 0
+      ? rect.left
+      : rect.left + rect.width}px;"
   >
     ${viewSimlinks(result.similar)}
   </dialog>`
@@ -173,5 +180,6 @@ const viewQuery = (query: Query | null) =>
 const viewKeywords = (keywords: string[]) => viewList(keywords || [], viewKeyword, ['keyword'])
 const viewKeyword = (name: string) => html`<a href="#${name}" class="keyword">${name}</a>`
 
-const viewSimlinks = (entries: Simlink[]): View => viewList(entries, viewSimlink, ['simlink'])
+const viewSimlinks = (entries: Simlink[]): View =>
+  viewList(entries.slice(0, 3), viewSimlink, ['simlink'])
 const viewSimlink = (entry: Simlink): View => viewResource(entry.resource)

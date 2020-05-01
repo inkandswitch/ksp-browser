@@ -10,7 +10,7 @@ type Model = {
 
 export const view = ({ resource, mode }: Model) => {
   const links = resource ? resource.backLinks : []
-  return html`<aside class="panel sans-serif backlinks">
+  return html`<aside class="panel backlinks">
     ${viewLinks(links, 'Backlinks')}
   </aside>`
 }
