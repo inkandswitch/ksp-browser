@@ -73,7 +73,7 @@ export const query = (query: Query, state: Model): [Model, null | Promise<null |
     case Status.Pending: {
       if (query.input.content.length < 4) {
         return [idle(), null]
-      } else if (query.input != state.query.input) {
+      } else if (query.input.content != state.query.input.content) {
         return [{ status: Status.Pending, query, result: null }, similar(query)]
       } else {
         return [state, null]
@@ -129,10 +129,6 @@ const showBadge = ({ query: { rect }, status, result }: Ready): View =>
     style="top: ${rect.top + rect.height / 2}px; left:${rect.left + rect.width}px;"
   >
     <span class="double-dagger">‡</span>${result.similar.length}
-    <!-- simlinks -->
-    <section class="tooltip">
-      ${viewSimlinks(result.similar)}
-    </section>
   </button>`
 
 const debug = ({ top, left, height, width }: Rect): View =>

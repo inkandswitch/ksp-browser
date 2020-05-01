@@ -492,6 +492,7 @@ details > summary::-webkit-details-marker {
 }
 
 .badge {
+  cursor: pointer;
   position: absolute;
   display: inline-block;
   z-index: 99999993;
