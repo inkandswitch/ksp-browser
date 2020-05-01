@@ -48,3 +48,16 @@ body {
 .ksp-browser-annotation .ksp-browser-siblinks:hover {
   text-decoration: underline;
 }
+
+.ksp-browser-annotation {
+  position: relative;
+  width: 0;
+  height: 0;
+  display: inline-block;
+}
+
+.ksp-browser-annotation .ksp-browser-siblinks {
+  position: absolute;
+  transform: translate(-50%, -130%);
+  background: inherit;
+}
