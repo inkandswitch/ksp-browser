@@ -617,6 +617,7 @@ details > summary::-webkit-details-marker {
 
 .viewport .frame.center {
   background: none;
+  pointer-events: none;
   width: 100vw;
   height: 100vh;
   box-shadow: rgba(0, 0, 0, 0.4) -50px 0 80px;
