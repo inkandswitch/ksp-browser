@@ -67,7 +67,7 @@ const updateSelection = (
 export const query = (query: Query, state: Model): [Model, null | Promise<null | Message>] => {
   switch (state.status) {
     case Status.Idle: {
-      return [{ status: Status.Pending, query, result: null }, null]
+      return [{ status: Status.Pending, query, result: null }, similar(query)]
     }
     case Status.Ready:
     case Status.Pending: {
@@ -129,6 +129,10 @@ const showBadge = ({ query: { rect }, status, result }: Ready): View =>
     style="top: ${rect.top + rect.height / 2}px; left:${rect.left + rect.width}px;"
   >
     <span class="double-dagger">‡</span>${result.similar.length}
+    <!-- simlinks -->
+    <section class="tooltip">
+      ${viewSimlinks(result.similar)}
+    </section>
   </button>`
 
 const debug = ({ top, left, height, width }: Rect): View =>
