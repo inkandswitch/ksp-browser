@@ -505,6 +505,7 @@ details > summary::-webkit-details-marker {
   margin: 0;
   padding: 0;
   border-radius: 0 5px 5px 0px;
+  opacity: 1;
 }
 
 .bubble.backward {
@@ -542,6 +543,11 @@ details > summary::-webkit-details-marker {
 .bubble:hover .summary,
 .bubble:hover .details {
   opacity: 0.98;
+}
+
+.bubble.out:not(:hover) {
+  transition-delay: 0.3s;
+  opacity: 0;
 }
 
 .bubble .summary {
