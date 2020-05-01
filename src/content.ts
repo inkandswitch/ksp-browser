@@ -131,8 +131,8 @@ const updateSimlinks = (
   state: Model,
   message: SimilarResponse | SelectionChange
 ): [Model, null | Promise<null | Message>] => {
-  const [similar, fx] = Simlinks.update(message, state.simlinks)
-  return [{ ...state, simlinks: similar }, fx]
+  const [simlinks, fx] = Simlinks.update(message, state.simlinks)
+  return [{ ...state, simlinks }, fx]
 }
 
 const ingest = async (): Promise<Message | null> => {
@@ -264,7 +264,7 @@ const render = (context: Context<Model, Message>) => {
     shadowRoot.addEventListener('click', context, { passive: true })
     document.addEventListener('mouseover', context, { passive: true })
     document.addEventListener('mouseout', context, { passive: true })
-    document.addEventListener('selectionchange', context, { passive: true })
+    document.addEventListener('mouseup', context, { passive: true })
     document.addEventListener('click', context)
 
     target.program = context
@@ -326,8 +326,8 @@ const onEvent = (event: Event): Message | null => {
     case 'mouseout': {
       return onMouseOut(<MouseEvent>event)
     }
-    case 'selectionchange': {
-      return onSelectionChange(event)
+    case 'mouseup': {
+      return onSelectionChange(<MouseEvent>event)
     }
     default: {
       return null
@@ -373,7 +373,7 @@ const onClick = (event: MouseEvent): Message | null => {
   return null
 }
 
-const onSelectionChange = (event: Event): Message | null => {
+const onSelectionChange = (event: MouseEvent): Message | null => {
   const { timeStamp } = event
   const selection = document.getSelection()
   const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null

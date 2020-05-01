@@ -1,4 +1,4 @@
-const debounce = <fn extends (...args: any[]) => void>(
+export const debounce = <fn extends (...args: any[]) => void>(
   f: fn,
   delay: number = 0
 ): ((...args: Parameters<fn>) => void) => {
@@ -7,6 +7,6 @@ const debounce = <fn extends (...args: any[]) => void>(
     if (timer !== null) {
       clearTimeout(timer)
     }
-    timer = setTimeout(f, delay)
+    timer = <any>setTimeout(f, delay, ...args)
   }
 }
