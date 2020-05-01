@@ -109,23 +109,28 @@ const viewActiveTooltip = ({ status, link: { rect }, siblinks }: ReadyState): Vi
   html`<dialog
     class="tooltip siblinks"
     ?open=${status === Status.Over}
-    style="top: ${rect.top + rect.height}px; left:${rect.left + rect.width / 2}px;"
+    style="top: ${rect.top + rect.height}px; left:${rect.left + rect.width}px;"
   >
     ${viewLinks(siblinks.links, 'Siblinks')}
   </dialog>`
 
-const viewBadge = (state: Model): View => {
+const viewBubble = (state: Model): View => {
   const data = read(state)
-  return data ? showBadge(data) : hideBadge()
+  return data ? showBubble(data) : hideBubble(state)
 }
 
-const hideBadge = (): View => nothing
-const showBadge = ({ link: { rect }, status, siblinks }: ReadyState): View =>
+const hideBubble = (state: Model): View => nothing
+const showBubble = ({ link: { rect }, status, siblinks }: ReadyState): View =>
   html`<button
-    class="badge siblinks ${status}"
-    style="top: ${rect.top + rect.height / 2}px; left:${rect.left + rect.width}px;"
+    class="bubble siblinks ${rect.width < 0 ? 'backward' : 'forward'} ${status}"
+    style="top:${rect.top}px;
+      left:${rect.width < 0 ? rect.left : rect.left + rect.width}px;
+      font-size:${rect.height}px;
+      line-height:${rect.height}px"
   >
-    <span class="double-dagger">‡</span>${siblinks.links.length}
+    <div class="summary">‡${siblinks.links.length}</div>
+    <!-- details -->
+    <div class="details">${viewSiblinks(siblinks)}</div>
   </button>`
 
 const viewLinkAnnotations = Viewer((state: Model) => (driver: ViewDriver) => {
@@ -153,8 +158,5 @@ const viewLinkAnnotation = (siblink: Siblink, url: string): View =>
 
 export const view = (state: Model): View => viewSidebar(state)
 
-export const viewOverlay = (state: Model): View =>
-  html`<!-- annotations -->
-    ${viewLinkAnnotations(state)}
-    <!-- tootip -->
-    ${viewTooltip(state)}`
+export const viewOverlay = (state: Model): View => viewBubble(state)
+const viewSiblinks = (siblinks: Siblink): View => viewLinks(siblinks.links, 'Siblinks')

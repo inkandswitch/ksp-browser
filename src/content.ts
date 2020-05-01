@@ -354,7 +354,7 @@ const onEvent = (event: Event): Message | null => {
 
 const onClick = (event: MouseEvent): Message | null => {
   const target = <HTMLElement>event.target
-  if (target.classList.contains('badge') || target.classList.contains('bubble')) {
+  if (target.classList.contains('bubble')) {
     event.preventDefault()
     event.stopPropagation()
     if (target.classList.contains('siblinks')) {
@@ -410,7 +410,7 @@ const onSelectionChange = (event: MouseEvent): Message | null => {
 
 const onMouseOver = (event: MouseEvent): Message | null => {
   const target = <HTMLElement>event.target
-  if (target.localName === 'a' && target.hasAttribute('data-siblinks')) {
+  if (target.localName === 'a') {
     const anchor = <HTMLAnchorElement>target
     const { top, left, height, width } = resolveRect(anchor, anchor.getBoundingClientRect())
 
@@ -422,7 +422,7 @@ const onMouseOver = (event: MouseEvent): Message | null => {
 
 const onMouseOut = (event: MouseEvent): Message | null => {
   const target = <HTMLElement>event.target
-  if (target.localName === 'a' && target.hasAttribute('data-siblinks')) {
+  if (target.localName === 'a') {
     const anchor = <HTMLAnchorElement>target
     return { type: 'LinkHover', link: null }
   }

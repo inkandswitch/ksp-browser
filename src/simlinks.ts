@@ -115,26 +115,25 @@ const toReady = (state: Model): Ready | null => {
 
 export const view = (state: Model): View => viewSidebar(state)
 
-export const viewOverlay = (state: Model): View =>
-  html`<!-- bubble -->
-    ${viewBadge(state)}
-    <!-- tooltip -->
-    ${viewTooltip(state)}`
+export const viewOverlay = (state: Model): View => viewBubble(state)
 
-const viewBadge = (state: Model): View => {
+const viewBubble = (state: Model): View => {
   const data = toReady(state)
-  return data ? showBadge(data) : hideBadge()
+  return data ? showBubble(data) : hideBubble(state)
 }
 
-const hideBadge = (): View => nothing
-const showBadge = ({ query: { rect }, status, result }: Ready): View =>
+const hideBubble = (state: Model): View => nothing
+const showBubble = ({ query: { rect }, status, result }: Ready): View =>
   html`<button
     class="bubble simlinks ${rect.width < 0 ? 'backward' : 'forward'} ${status}"
-    style="top:${rect.top}px; left:${rect.width < 0
-      ? rect.left
-      : rect.left + rect.width}px; height:${rect.height}px"
+    style="top:${rect.top}px;
+      left:${rect.width < 0 ? rect.left : rect.left + rect.width}px;
+      font-size:${rect.height}px;
+      line-height:${rect.height}px;"
   >
     <div class="summary">‡${result.similar.length}</div>
+    <!-- details -->
+    <div class="details">${viewSimlinks(result.similar)}</div>
   </button>`
 
 const debug = ({ top, left, height, width }: Rect): View =>
