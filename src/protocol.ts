@@ -39,6 +39,21 @@ export type Tag = {
   target: Resource
 }
 
+export type Simlinks = {
+  keywords: string[]
+  similar: Simlink[]
+}
+
+export type Simlink = {
+  resource: Resource
+  score: number
+}
+
+export type InputSimilar = {
+  content: string
+  url: string
+}
+
 export type Option<t> = null | t
 
 export type Vec<t> = t[]

@@ -4,13 +4,52 @@ export type Disable = { type: 'Disable' }
 export type Enable = { type: 'Enable' }
 export type CloseRequest = { type: 'CloseRequest' }
 
+export type HideRequest = {
+  type: 'Hide'
+}
+
 export type ToggleRequest = {
   type: 'Toggle'
 }
 
+export enum Display {
+  Backlinks = 'backlinks',
+  Siblinks = 'siblinks',
+  Simlinks = 'simlinks',
+}
+
+export type ShowRequest = {
+  type: 'Show'
+  show: Display
+}
+
+export type Rect = {
+  top: number
+  left: number
+  width: number
+  height: number
+}
+
+export type HoveredLink = {
+  url: string
+  rect: Rect
+}
+
 export type LinkHover = {
   type: 'LinkHover'
-  url: string | null
+  link: HoveredLink | null
+}
+
+export type SelectionChange = {
+  type: 'SelectionChange'
+  data: SelectionData | null
+}
+
+export type SelectionData = {
+  url: string
+  content: string
+  id: number
+  rect: Rect
 }
 
 export type InspectLinksRequest = {
@@ -20,6 +59,19 @@ export type InspectLinksRequest = {
 export type InspectLinksResponse = {
   type: 'InspectLinksResponse'
   resource: Protocol.Resource
+}
+
+export type SimilarRequest = {
+  type: 'SimilarRequest'
+  id: number
+  rect: Rect
+  input: Protocol.InputSimilar
+}
+
+export type SimilarResponse = {
+  type: 'SimilarResponse'
+  id: number
+  similar: Protocol.Simlinks
 }
 
 export type OpenRequest = {
@@ -67,15 +119,27 @@ export type ExtensionInbox =
   | IngestRequest
   | TagsRequest
   | OpenRequest
+  | SimilarRequest
 
 export type AgentInbox =
   | ToggleRequest
+  | ShowRequest
+  | HideRequest
   | LookupResponse
   | IngestResponse
   | OpenResponse
   | InspectLinksRequest
+  | SimilarResponse
 
-export type AgentMessage = Enable | Disable | OpenRequest | InspectLinksResponse | LinkHover
+export type AgentOwnInbox =
+  | Enable
+  | Disable
+  | OpenRequest
+  | InspectLinksResponse
+  | LinkHover
+  | SelectionChange
+
+export type AgentMessage = AgentInbox | AgentOwnInbox
 
 export type UIInbox = CloseRequest
 

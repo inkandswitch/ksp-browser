@@ -1,35 +1,28 @@
 import {
-  ExtensionInbox,
   AgentInbox,
   AgentMessage,
   UIInbox,
-  CloseRequest,
-  Enable,
-  Disable,
-  LookupResponse,
-  ToggleRequest,
-  InspectLinksResponse,
-  OpenRequest,
-  OpenResponse,
+  SimilarResponse,
+  SimilarRequest,
+  Display,
+  HoveredLink,
+  SelectionChange,
 } from './mailbox'
 import * as Protocol from './protocol'
 import { Program, Context } from './program'
 // No idea why just `from 'lit-html' does not seem to work here.
-import {
-  html,
-  render as renderHTML,
-  nothing,
-  Template,
-  TemplateResult,
-} from '../node_modules/lit-html/lit-html'
-import { stat } from 'fs'
+import { html, renderView, nothing, View, ViewDriver, Viewer } from './view/html'
 import { md } from './remark'
 import { map } from './iterable'
+import { send, request } from './runtime'
 import * as scanner from './scanner'
 import * as Siblinks from './siblinks'
 import * as Backlinks from './backlinks'
+import * as Simlinks from './simlinks'
 import * as Thumb from './thumb'
+import * as URL from './url'
 import { Mode } from './mode'
+import { getSelectionTooltipRect, resolveRect } from './dom/selection'
 
 const onUIMessage = (message: MessageEvent) => {
   switch (message.type) {
@@ -48,15 +41,27 @@ const close = () => {
 
 type Model = {
   mode: Mode
+  display: Display
+
   siblinks: Siblinks.Model
   resource: null | Protocol.Resource
+  simlinks: Simlinks.Model
 }
 
 type Message = AgentInbox | AgentMessage
 type Address = { tabId: number; frameId: number }
 
 const init = (): [Model, Promise<null | Message>] => {
-  return [{ mode: Mode.Enabled, resource: null, siblinks: Siblinks.init() }, lookup()]
+  return [
+    {
+      mode: Mode.Enabled,
+      display: Display.Backlinks,
+      resource: null,
+      siblinks: Siblinks.init(),
+      simlinks: Simlinks.init(),
+    },
+    lookup(),
+  ]
 }
 
 const update = (message: Message, state: Model): [Model, null | Promise<null | Message>] => {
@@ -69,6 +74,12 @@ const update = (message: Message, state: Model): [Model, null | Promise<null | M
     }
     case 'Toggle': {
       return [toggle(state), null]
+    }
+    case 'Hide': {
+      return [hide(state), null]
+    }
+    case 'Show': {
+      return [show(state, message.show), null]
     }
     case 'InspectLinksRequest': {
       return [state, scan()]
@@ -89,13 +100,19 @@ const update = (message: Message, state: Model): [Model, null | Promise<null | M
       return [setIngested(state, message.ingest), null]
     }
     case 'LinkHover': {
-      return [setHoveredLink(state, message.url), null]
+      return [setHoveredLink(state, message.link), null]
+    }
+    case 'SelectionChange': {
+      return updateSimlinks(state, message)
+    }
+    case 'SimilarResponse': {
+      return updateSimlinks(state, message)
     }
   }
 }
 
-const setHoveredLink = (state: Model, url: null | string) => {
-  return { ...state, siblinks: Siblinks.hover(state.siblinks, url) }
+const setHoveredLink = (state: Model, link: HoveredLink | null) => {
+  return { ...state, siblinks: Siblinks.hover(state.siblinks, link) }
 }
 
 const setIngested = (state: Model, ingested: Protocol.Ingest) => {
@@ -110,11 +127,18 @@ const inspectLocalLinks = (state: Model, resource: Protocol.Resource) => {
   return { ...state, mode: Mode.Active, resource }
 }
 
+const updateSimlinks = (
+  state: Model,
+  message: SimilarResponse | SelectionChange
+): [Model, null | Promise<null | Message>] => {
+  const [simlinks, fx] = Simlinks.update(message, state.simlinks)
+  return [{ ...state, simlinks }, fx]
+}
+
 const ingest = async (): Promise<Message | null> => {
   await loaded(document)
   const resource = scanner.read(document)
   const response = await request({ type: 'IngestRequest', resource })
-  console.log(response)
   return response
 }
 
@@ -128,8 +152,8 @@ const once = (target: Node | Window, type: string) =>
   new Promise((resolve) => target.addEventListener(type, resolve, { once: true }))
 
 const lookup = async (): Promise<Message | null> => {
+  const lookupURL = URL.from(location.href, { hash: '' })
   const response = await request({ type: 'LookupRequest', lookup: location.href })
-  console.log(response)
   return response
 }
 
@@ -209,39 +233,104 @@ const enable = (state: Model) => {
   }
 }
 
+const show = (state: Model, display: Display): Model => {
+  return { ...state, display, mode: Mode.Active }
+}
+
 const toggle = (state: Model): Model => {
   switch (state.mode) {
     case Mode.Disabled:
-      return state
+      return { ...state, display: Display.Backlinks }
     case Mode.Enabled:
-      return { ...state, mode: Mode.Active }
+      return { ...state, mode: Mode.Active, display: Display.Backlinks }
     case Mode.Active:
-      return { ...state, mode: Mode.Enabled }
+      return { ...state, mode: Mode.Enabled, display: Display.Backlinks }
   }
 }
 
-const view = (context: Context<Model>) => {
-  const view = document.querySelector('cont-ext')
-  if (!view) {
-    const view = <HTMLElement & { program: Context<Model> }>document.createElement('cont-ext')
-    let shadowRoot = view.attachShadow({ mode: 'open' })
-    renderHTML(render(context.state), shadowRoot)
-    document.documentElement.appendChild(view)
+const hide = (state: Model): Model => {
+  return { ...state, mode: Mode.Enabled }
+}
+
+const render = (context: Context<Model, Message>) => {
+  let ui = document.querySelector('double-dagger-ui')
+  if (!ui) {
+    const ui = <HTMLElement & { program: Context<Model, Message> }>(
+      document.createElement('double-dagger-ui')
+    )
+    let shadowRoot = ui.attachShadow({ mode: 'open' })
+    renderView(view(context.state), shadowRoot, { eventContext: <any>context })
+    const target = document.documentElement.appendChild(ui)
     shadowRoot.addEventListener('click', context, { passive: true })
     document.addEventListener('mouseover', context, { passive: true })
     document.addEventListener('mouseout', context, { passive: true })
+    document.addEventListener('mouseup', context, { passive: true })
+    document.addEventListener('click', context)
 
-    view.program = context
+    target.program = context
   } else {
-    renderHTML(render(context.state), view.shadowRoot!)
+    renderView(view(context.state), ui.shadowRoot!)
+  }
+
+  let overlay = document.querySelector('double-dagger-overlay')
+  if (overlay) {
+    renderView(viewOverlay(context.state), overlay.shadowRoot!)
+  } else if (document.body) {
+    const overlay = <HTMLElement & { program: Context<Model, Message> }>(
+      document.createElement('double-dagger-overlay')
+    )
+    let shadowRoot = overlay.attachShadow({ mode: 'open' })
+    renderView(viewOverlay(context.state), shadowRoot, { eventContext: <any>context })
+    const target = document.body.appendChild(overlay)
+    shadowRoot.addEventListener('click', context)
   }
 }
 
-const render = (state: Model) =>
+const view = (state: Model) =>
+  html`
+    <style>
+      aside {
+        display: none;
+      }
+    </style>
+    <link rel="stylesheet" href="${chrome.extension.getURL('ui.css')}" />
+    <div class="${state.display}">
+      <!-- Thumb -->
+      ${Thumb.view(state) && nothing}
+      <!-- Backlinks -->
+      ${Backlinks.view(state)}
+      <!-- Siblinks -->
+      ${Siblinks.view(state.siblinks)}
+      <!-- Simlinks -->
+      ${Simlinks.view(state.simlinks)}
+    </div>
+    <main class="viewport">
+      <div class="frame top"></div>
+      <div class="frame left"></div>
+      <div class="frame right"></div>
+      <div class="frame bottom"></div>
+      <div class="frame center"></div>
+    </main>
+    ${rootView(state)}
+  `
+
+const viewOverlay = (state: Model) =>
   html`
     <link rel="stylesheet" href="${chrome.extension.getURL('ui.css')}" />
-    ${Thumb.view(state)} ${Backlinks.view(state)} ${Siblinks.view(state.siblinks)}
+    ${Thumb.view(state) && nothing}
+    <!-- Siblinks -->
+    ${Siblinks.viewOverlay(state.siblinks)}
+    <!-- Similnks -->
+    ${Simlinks.viewOverlay(state.simlinks)}
   `
+
+const rootView = Viewer((state: Model) => (driver: ViewDriver): void => {
+  if (state.mode === Mode.Active) {
+    document.documentElement.classList.add('ksp-browser-active')
+  } else {
+    document.documentElement.classList.remove('ksp-browser-active')
+  }
+})
 
 const onEvent = (event: Event): Message | null => {
   switch (event.type) {
@@ -254,6 +343,9 @@ const onEvent = (event: Event): Message | null => {
     case 'mouseout': {
       return onMouseOut(<MouseEvent>event)
     }
+    case 'mouseup': {
+      return onSelectionChange(<MouseEvent>event)
+    }
     default: {
       return null
     }
@@ -262,6 +354,25 @@ const onEvent = (event: Event): Message | null => {
 
 const onClick = (event: MouseEvent): Message | null => {
   const target = <HTMLElement>event.target
+  if (target.classList.contains('bubble')) {
+    event.preventDefault()
+    event.stopPropagation()
+    if (target.classList.contains('siblinks')) {
+      return { type: 'Show', show: Display.Siblinks }
+    }
+    if (target.classList.contains('simlinks')) {
+      return { type: 'Show', show: Display.Simlinks }
+    }
+    if (target.classList.contains('backlinks')) {
+      return { type: 'Show', show: Display.Backlinks }
+    }
+  }
+
+  if (target.classList.contains('ksp-browser-siblinks')) {
+    event.preventDefault()
+    return { type: 'Show', show: Display.Siblinks }
+  }
+
   if (target.localName === 'a') {
     const anchor = <HTMLAnchorElement>target
     if (!anchor.href.startsWith('http')) {
@@ -271,14 +382,40 @@ const onClick = (event: MouseEvent): Message | null => {
       return null
     }
   }
+
+  if (document.body.contains(target) || target.classList.contains('frame')) {
+    return { type: 'Hide' }
+  } else {
+    return null
+  }
+
   return null
+}
+
+const onSelectionChange = (event: MouseEvent): Message | null => {
+  const { timeStamp } = event
+  const selection = document.getSelection()
+  const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null
+  const content = range ? range.toString().trim() : ''
+  if (content != '') {
+    const url = URL.from(document.URL, { hash: '' }).href
+    // const { top, left, width, height } = range!.getBoundingClientRect()
+    const rect = <DOMRect>getSelectionTooltipRect(selection!)
+    const id = timeStamp
+    return { type: 'SelectionChange', data: { content, url, rect, id } }
+  } else {
+    return { type: 'SelectionChange', data: null }
+  }
 }
 
 const onMouseOver = (event: MouseEvent): Message | null => {
   const target = <HTMLElement>event.target
   if (target.localName === 'a') {
     const anchor = <HTMLAnchorElement>target
-    return { type: 'LinkHover', url: anchor.href }
+    const { top, left, height, width } = resolveRect(anchor, anchor.getBoundingClientRect())
+
+    const rect = { top: top + window.scrollY, left: window.scrollX + left, height, width }
+    return { type: 'LinkHover', link: { url: anchor.href, rect } }
   }
   return null
 }
@@ -287,7 +424,7 @@ const onMouseOut = (event: MouseEvent): Message | null => {
   const target = <HTMLElement>event.target
   if (target.localName === 'a') {
     const anchor = <HTMLAnchorElement>target
-    return { type: 'LinkHover', url: null }
+    return { type: 'LinkHover', link: null }
   }
   return null
 }
@@ -298,7 +435,7 @@ const onload = async () => {
       init,
       update,
       onEvent,
-      render: view,
+      render,
     },
     undefined,
     document.body
@@ -312,26 +449,5 @@ const onload = async () => {
   const onExtensionMessage = (message: AgentInbox) => program.send(message)
   chrome.runtime.onMessage.addListener(onExtensionMessage)
 }
-
-const send = async (message: ExtensionInbox) => {
-  chrome.runtime.sendMessage(message)
-  return null
-}
-
-const request = (message: ExtensionInbox): Promise<Message | null> =>
-  new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(message, (response) => {
-      if (response) {
-        resolve(response)
-      } else if (chrome.runtime.lastError) {
-        const error = chrome.runtime.lastError
-        if (!error) {
-          resolve(response)
-        } else {
-          reject(error)
-        }
-      }
-    })
-  })
 
 onload()

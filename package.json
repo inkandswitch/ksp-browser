@@ -5,7 +5,8 @@
   "repository": "github.com/inkandswitch/cont-ext",
   "license": "MIT",
   "scripts": {
-    "build": "webpack"
+    "build": "webpack",
+    "watch": "webpack -w"
   },
   "dependencies": {
     "lit-html": "1.2.1",

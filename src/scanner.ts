@@ -2,20 +2,14 @@ import { clipSummary } from './scraper'
 import * as protocol from './protocol'
 import Readability from 'readability/Readability'
 import { turndown } from './turn-down'
-
-const readURL = (href: string, base?: URL): URL => {
-  const url = new URL(href, base)
-  url.search = ''
-  url.hash = ''
-  return url
-}
+import * as URL from './url'
 
 export const read = (target: HTMLDocument): protocol.InputResource => {
   const { title, description, icon, image } = clipSummary(document)
 
   return {
-    url: document.URL,
-    links: readLinks(document),
+    url: URL.from(document.URL, { hash: '' }).href,
+    links: [...readLinks(document)],
     content: readContent(document),
     cid: null,
     icon,
@@ -32,29 +26,52 @@ const readContent = (document: HTMLDocument): string => {
   return turndown(article.content)
 }
 
-const readLinks = (document: HTMLDocument): protocol.InputLink[] => {
-  const baseURL = readURL(document.URL)
-  const elements: Iterable<HTMLAnchorElement> = <any>document.body.querySelectorAll('a[href]')
-  const links = []
+const IGNORED_PROTOCOLS = new Set([
+  'javascript:',
+  'data:',
+  'blob:',
+  'about:',
+  'moz-extension:',
+  'chrome:',
+  'about:',
+  'resource:',
+  'view-source:',
+  'chrome-extension:',
+])
 
-  for (const element of elements) {
-    // Compare against the URL without query params & hash  but
-    // capture actual URL as e.g. stack overflow search would not
-    // land right without it.
-    if (baseURL.href !== readURL(element.href, baseURL).href) {
-      links.push({
-        kind: protocol.LinkKind.INLINE,
-        targetURL: new URL(element.href, baseURL).href,
-        identifier: null,
-        name: element.text.trim(),
-        title: element.title,
-        referrerFragment: readLinkContext(element),
-        referrerLocation: null,
-      })
+const readLinks = function* (document: HTMLDocument): Iterable<protocol.InputLink> {
+  const baseURL = URL.from(document.URL, { hash: '', search: '' })
+
+  for (const element of scanLinks(document)) {
+    const targetURL = URL.parse(element.href, baseURL)
+    yield {
+      kind: protocol.LinkKind.INLINE,
+      targetURL: targetURL.href,
+      identifier: null,
+      name: element.text.trim(),
+      title: element.title,
+      referrerFragment: readLinkContext(element),
+      referrerLocation: null,
     }
   }
+}
 
-  return links
+export const scanLinks = function* (document: HTMLDocument): Iterable<HTMLAnchorElement> {
+  const baseURL = URL.from(document.URL, { hash: '', search: '' })
+  const elements: Iterable<HTMLAnchorElement> = <any>document.body.querySelectorAll('a[href]')
+
+  for (const element of elements) {
+    const targetURL = URL.parse(element.href, baseURL)
+    // If target URL is not on the ignored protocol list and
+    // it is not the same url but with different query params and hashes
+    // include this into read links.
+    if (
+      !IGNORED_PROTOCOLS.has(targetURL.protocol) &&
+      (baseURL.origin !== targetURL.origin || baseURL.pathname != targetURL.pathname)
+    ) {
+      yield element
+    }
+  }
 }
 
 const isSameDocumentURL = (target: URL, source: URL) =>

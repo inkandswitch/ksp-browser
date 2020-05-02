@@ -1,7 +1,9 @@
-import { html, nothing, Template, TemplateResult } from '../node_modules/lit-html/lit-html'
+import { html, nothing, View } from './view/html'
+import { viewList } from './view/list'
 import { Link, Tag, Resource } from './protocol'
 import { map } from './iterable'
 import { md } from './remark'
+import { view as viewResource } from './view/resource'
 
 export const viewLinks = (links: Link[], title: string) =>
   links.length === 0
@@ -22,73 +24,13 @@ const groupByReferrer = (links: Link[]) => {
   return map.values()
 }
 
-const viewList = <a>(
-  data: Iterable<a>,
-  view: (data: a) => TemplateResult,
-  classNames: string[]
-): TemplateResult =>
-  html`<ul class="${classNames.join(' ')}">
-    ${map((a) => html`<li class="${classNames.join(' ')}">${view(a)}</li>`, data)}
-  </ul>`
-
 const viewLinkGroup = (links: Link[]) =>
   html`<details>
-    <summary>${renderReferrer(links[0])}</summary>
+    <summary>${viewReferrer(links[0])}</summary>
     ${viewList(links, viewLink, ['link'])}
   </details>`
 
-const renderReferrer_ = (link: Link) =>
-  html`<a target="_blank" title="${link.title}" href="${link.referrer.url}">
-      ${link.referrer.info.title.trim()}
-    </a>
-    ${viewTags(link.referrer.tags)} ${viewReference(link)}
-    <p>${md(link.referrer.info.description)}</p>`
-
-const renderReferrer = (link: Link) =>
-  html`<div class="card">
-    <div class="card-image">
-      <img class="image" src="${getImageURL(link.referrer)}" alt="" />
-    </div>
-    <div class="card-content">
-      <a class="title" target="_blank" title="${link.title}" href="${link.referrer.url}">
-        ${link.referrer.info.title.trim()}
-      </a>
-      <div class="description">${md(link.referrer.info.description)}</div>
-      <a class="url" target="_blank" title="${link.title}" href="${link.referrer.url}">
-        <img class="site-icon" src="${getIconURL(link.referrer)}" alt="" />
-        ${link.referrer.url}
-      </a>
-    </div>
-  </div>`
-
-const getIconURL = (resource: Resource): string =>
-  resource.info.icon || chrome.extension.getURL('link-solid.svg')
-
-const getImageURL = (resource: Resource) => {
-  const { image } = resource.info
-  if (image) {
-    return image
-  } else {
-    const url = new URL(resource.url)
-    switch (url.protocol) {
-      case 'file:': {
-        const extension = url.pathname.slice(url.pathname.lastIndexOf('.')).toLowerCase()
-        switch (extension) {
-          case '.markdown':
-          case '.md': {
-            return chrome.extension.getURL('md-icon.svg')
-          }
-          default: {
-            return chrome.extension.getURL('file-alt-solid.svg')
-          }
-        }
-      }
-      default: {
-        return chrome.extension.getURL('icon-on.svg')
-      }
-    }
-  }
-}
+const viewReferrer = (link: Link) => viewResource(link.referrer)
 
 const viewTags = (tags: Tag[]) =>
   tags.map(({ name }) => html`<a href="#${name}" class="tag">${name}</a>`)
