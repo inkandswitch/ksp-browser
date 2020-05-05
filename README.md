@@ -6,6 +6,9 @@ As you browse the internet, you'll be able to see whether other pages you've vis
 
 It does this by storing a local copy of the pages you browse and extracting their links, and keywords (using an algorithm called tf-idf). No data ever leaves your computer. There is no cloud service, and no subscription, and only local processes can access it.
 
+*Warning: This is an experimental piece of research software presented for transparency, and is incomplete, unsupported, and likely to stop working.*
+
+
 ## Installing
 
 Diesis has two pieces, a browser plugin and a local daemon that stores the data. You'll need both halves to use diesis successfully.
@@ -45,5 +48,6 @@ Simlinks are pages with similar content to your current query.
 
 ## Credits
 
+An Ink & Switch joint. Part of the `research-trails` project, along with xcrpt and ksp.
 Software by Irakli Gozalishvili & Peter van Hardenberg
 Based on Pushpin Clipper by Peter van Hardenberg
