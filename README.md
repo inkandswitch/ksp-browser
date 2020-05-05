@@ -40,11 +40,19 @@ A backlink is a link to this page from somewhere else you've been. It might be a
 
 ### Siblinks
 
-A sib-link is looking /across/ your history, and showing you the other pages that link to this destination.
+A sib-link is a link you've seen somewhere before. The view will show you summaries of other pages where you've seen this link before. This is particularly useful for reference links, such as commonly-linked documentation, blog posts, or similar. 
 
 ### Simlinks
 
 Simlinks are pages with similar content to your current query.
+
+### Known Bugs
+
+Diesis sometimes conflicts with webpages. If it's causing problems, you can disable diesis by navigating to [chrome://extensions] and toggling the extension to off. This will stop sending and querying your KSP server. The extension will remain off unless reenabled.
+
+### Wishlist
+
+While the research-trails project is over, if you're interested in contributing, there are some features we didn't get to in the GitHub Issues page. Feel free to inquire on any of them and if one of us has time, we'll help you figure out how to pursue it.
 
 ## Credits
 
