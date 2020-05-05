@@ -20,7 +20,7 @@ The browser plugin is compatible with Chrome and Firefox, but you'll need to com
     $ yarn
     $ yarn build
 
-The the result will be an "unpacked" extension in the `./dist` directory, which you can load in Chrome by going to [chrome://extensions](chrome://extensions), and clicking "Load Unpacked", then pointing the dialog at the `dist` directory.
+The the result will be an "unpacked" extension in the `./dist` directory, which you can load in Chrome by going to [chrome://extensions](chrome://extensions), and clicking "Load Unpacked" (you may have to toggle on Developer Mode!), then pointing the dialog at the `dist` directory.
 
 ### Local daemon
 
