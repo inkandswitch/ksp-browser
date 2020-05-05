@@ -49,5 +49,7 @@ Simlinks are pages with similar content to your current query.
 ## Credits
 
 An Ink & Switch joint. Part of the `research-trails` project, along with xcrpt and ksp.
+
 Software by Irakli Gozalishvili & Peter van Hardenberg
+
 Based on Pushpin Clipper by Peter van Hardenberg
