@@ -32,7 +32,7 @@ The daemon is a separate component because it can be used without diesis. Check 
 
 ## Usage
 
-Diesis adds an x-ray view that shows you three kinds of information.
+Diesis collects and archives the text and links on webpages you view, and resurfaces that information later at opportune moments. If Diesis has detected a relationship between the page you're looking at and a page you've previously viewed, the extension icon will include a number showing the number of connections it has discovered. Diesis will also surface links you've seen before on other pages (siblinks), and it will also allow you to query your local data for other pages with similar content by submitting selected text (this is particularly useful for jargon and names).
 
 ### Backlinks
 
