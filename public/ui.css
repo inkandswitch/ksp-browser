@@ -99,10 +99,6 @@
   display: none;
 }
 
-/* :host-context(.ksp-browser-active) .tooltip {
-  animation: disappear 0s ease-out 0s forwards !important;
-} */
-
 .debug {
   position: absolute;
   z-index: 999999991;
