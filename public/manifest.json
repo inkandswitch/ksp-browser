@@ -1,12 +1,17 @@
 {
-  "name": "context",
-  "description": "Add context to the web through the Knowledge Server Protocol (KSP).",
+  "name": "diesis",
+  "description": "Expanded information context for the browser.",
   "version": "0.1",
   "icons": { "144": "double-dagger.png" },
   "permissions": ["activeTab", "contextMenus", "*://*/*"],
   "background": {
     "scripts": ["background.js"],
     "persistent": false
+  },
+  "applications": {
+    "gecko": {
+      "id": "diesis@inkandswitch.com"
+    }
   },
   "content_scripts": [
     {

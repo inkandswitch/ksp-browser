@@ -6,7 +6,8 @@
   "license": "MIT",
   "scripts": {
     "build": "webpack",
-    "watch": "webpack -w"
+    "watch": "webpack -w",
+    "artifact": "web-ext build -s dist -o"
   },
   "dependencies": {
     "lit-html": "1.2.1",
