@@ -1,6 +1,6 @@
 {
   "name": "diesis",
-  "description": "Expanded information context for the browser.",
+  "description": "Add context to the web through the Knowledge Server Protocol (KSP).",
   "version": "0.1",
   "icons": { "144": "double-dagger.png" },
   "permissions": ["activeTab", "contextMenus", "*://*/*"],
