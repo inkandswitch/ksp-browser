@@ -36,10 +36,10 @@
 .panel.disabled {
 }
 
-:host:host-context(.ksp-browser-active) .siblinks .panel.siblinks,
-:host:host-context(.ksp-browser-active) .simlinks .panel.simlinks,
-:host:host-context(.ksp-browser-active) .backlinks .panel.backlinks,
-.thumb:hover + .panel,
+.ui.active.siblinks .panel.siblinks,
+.ui.active.simlinks .panel.simlinks,
+.ui.active.backlinks .panel.backlinks,
+.ui.thumb:hover + .panel,
 .panel.active,
 .simlinks.panel.ready {
   right: 0;
@@ -98,10 +98,6 @@
   background: inherit;
   display: none;
 }
-
-/* :host-context(.ksp-browser-active) .tooltip {
-  animation: disappear 0s ease-out 0s forwards !important;
-} */
 
 .debug {
   position: absolute;

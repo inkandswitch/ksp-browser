@@ -294,7 +294,7 @@ const view = (state: Model) =>
       }
     </style>
     <link rel="stylesheet" href="${chrome.extension.getURL('ui.css')}" />
-    <div class="${state.display}">
+    <div class="ui ${state.display} ${state.mode}">
       <!-- Thumb -->
       ${Thumb.view(state) && nothing}
       <!-- Backlinks -->

@@ -2,6 +2,24 @@
   overflow: hidden;
 }
 
+:host,
+:root {
+  color-scheme: light dark;
+  --bg-rgb: 222, 225, 230;
+  --bg-color: rgb(var(--bg-rgb));
+}
+
+@media (prefers-color-scheme: dark) {
+  :host,
+  :root {
+    --bg-rgb: 53, 54, 58;
+  }
+}
+
+:root {
+  background-color: var(--bg-color);
+}
+
 body {
   transform: perspective(1000px) translate3d(0, 0, 0);
   transition: transform 0.2s ease;
