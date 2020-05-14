@@ -271,19 +271,6 @@ const render = (context: Context<Model, Message>) => {
   } else {
     renderView(view(context.state), ui.shadowRoot!)
   }
-
-  let overlay = document.querySelector('double-dagger-overlay')
-  if (overlay) {
-    renderView(viewOverlay(context.state), overlay.shadowRoot!)
-  } else if (document.body) {
-    const overlay = <HTMLElement & { program: Context<Model, Message> }>(
-      document.createElement('double-dagger-overlay')
-    )
-    let shadowRoot = overlay.attachShadow({ mode: 'open' })
-    renderView(viewOverlay(context.state), shadowRoot, { eventContext: <any>context })
-    const target = document.body.appendChild(overlay)
-    shadowRoot.addEventListener('click', context)
-  }
 }
 
 const view = (state: Model) =>
@@ -304,33 +291,11 @@ const view = (state: Model) =>
       <!-- Simlinks -->
       ${Simlinks.view(state.simlinks)}
     </div>
-    <main class="viewport">
-      <div class="frame top"></div>
-      <div class="frame left"></div>
-      <div class="frame right"></div>
-      <div class="frame bottom"></div>
-      <div class="frame center"></div>
-    </main>
-    ${rootView(state)}
-  `
-
-const viewOverlay = (state: Model) =>
-  html`
-    <link rel="stylesheet" href="${chrome.extension.getURL('ui.css')}" />
-    ${Thumb.view(state) && nothing}
     <!-- Siblinks -->
     ${Siblinks.viewOverlay(state.siblinks)}
     <!-- Similnks -->
     ${Simlinks.viewOverlay(state.simlinks)}
   `
-
-const rootView = Viewer((state: Model) => (driver: ViewDriver): void => {
-  if (state.mode === Mode.Active) {
-    document.documentElement.classList.add('ksp-browser-active')
-  } else {
-    document.documentElement.classList.remove('ksp-browser-active')
-  }
-})
 
 const onEvent = (event: Event): Message | null => {
   switch (event.type) {
@@ -412,12 +377,24 @@ const onMouseOver = (event: MouseEvent): Message | null => {
   const target = <HTMLElement>event.target
   if (target.localName === 'a') {
     const anchor = <HTMLAnchorElement>target
-    const { top, left, height, width } = resolveRect(anchor, anchor.getBoundingClientRect())
+    const { x, y } = event
+    const bestRect = Array.from(anchor.getClientRects()).reduce((left, right) =>
+      distance(left, x, y) < distance(right, x, y) ? left : right
+    )
 
-    const rect = { top: top + window.scrollY, left: window.scrollX + left, height, width }
+    const { top, left, height, width } = resolveRect(anchor, bestRect)
+
+    const rect = { top, left, height, width }
     return { type: 'LinkHover', link: { url: anchor.href, rect } }
   }
   return null
+}
+
+const distance = ({ left, top, width, height }: DOMRect, x: number, y: number): number => {
+  let dx = Math.min(Math.abs(left - x), Math.abs(left + width - x))
+  let dy = Math.min(Math.abs(top - y), Math.abs(top + height - x))
+
+  return dx + dy
 }
 
 const onMouseOut = (event: MouseEvent): Message | null => {

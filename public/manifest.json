@@ -17,8 +17,7 @@
     {
       "matches": ["*://*/*"],
       "run_at": "document_start",
-      "js": ["content.js"],
-      "css": ["content.css"]
+      "js": ["content.js"]
     }
   ],
   "web_accessible_resources": [
