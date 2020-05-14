@@ -55,7 +55,7 @@
   height: 100vh;
   position: fixed;
   display: flex;
-  z-index: 99999992;
+  z-index: 99999995;
   font-family: var(--font);
   font-style: var(--font-size);
   background-color: var(--bg-color);

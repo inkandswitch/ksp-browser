@@ -136,12 +136,6 @@ const showBubble = ({ query: { rect }, status, result }: Ready): View =>
     <div class="details">${viewSimlinks(result.similar)}</div>
   </button>`
 
-const debug = ({ top, left, height, width }: Rect): View =>
-  html`<div
-    class="debug"
-    style="top:${top}px;left:${left}px;height:${height}px;width:${Math.abs(width)}px"
-  ></div>`
-
 const viewSidebar = (state: Model): View =>
   html`<aside class="panel simlinks">
     <h2 class="marked"><span>Simlinks</span></h2>
