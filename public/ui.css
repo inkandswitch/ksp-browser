@@ -532,7 +532,7 @@ details > summary::-webkit-details-marker {
   pointer-events: none;
 }
 .bubble:hover .details {
-  transition: opacity ease 0.2s 0.2s;
+  transition: opacity ease 0.2s 0.5s;
   pointer-events: all;
 }
 
