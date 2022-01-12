@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "lit-html": "1.2.1",
-    "markdown-it": "10.0.0",
+    "markdown-it": "12.3.2",
     "readability": "git://github.com/mozilla/readability.git",
     "rehype-raw": "4.0.2",
     "rehype-stringify": "7.0.0",
